@@ -1,0 +1,2 @@
+wwwroot\index.html
+C:\Users\DE6016\source\repos\FullPort\wwwroot\index.html

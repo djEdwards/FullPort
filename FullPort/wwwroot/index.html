@@ -1,0 +1,3378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FullPort - E*TRADE Portfolio</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        body { background-color: #f8f9fa; }
+        .gain-positive { color: #198754; }
+        .gain-negative { color: #dc3545; }
+        .table-holdings th { font-size: 0.85rem; }
+        .table-holdings td { font-size: 0.9rem; vertical-align: middle; }
+        .symbol-badge { font-weight: 600; font-size: 0.95rem; }
+        .holdings-filter { max-width: 300px; }
+        .sort-btn { cursor: pointer; user-select: none; }
+        .sort-btn:hover { color: #0d6efd; }
+        .summary-card {
+            background: var(--primary-gradient);
+            border-radius: 16px;
+            color: white;
+        }
+        .summary-card .label { 
+            font-size: 0.75rem; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+            opacity: 0.85;
+        }
+        .summary-card .value { font-weight: 600; }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .stat-card .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .account-card {
+            background: white;
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .account-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+        .nav-tabs .nav-link { border-radius: 8px 8px 0 0; }
+        .nav-tabs .nav-link.active { font-weight: 600; }
+        .rebalance-card {
+            background: white;
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .model-card {
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        .model-card:hover {
+            border-color: #6366f1;
+        }
+        .model-card.selected {
+            border-color: #6366f1;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+        }
+        .trade-buy { background-color: rgba(16, 185, 129, 0.1); }
+        .trade-sell { background-color: rgba(239, 68, 68, 0.1); }
+        .allocation-bar {
+            height: 24px;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #e5e7eb;
+        }
+        .allocation-segment {
+            height: 100%;
+            display: inline-block;
+            transition: width 0.3s;
+        }
+        /* Auth modal styling */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1050;
+        }
+        .auth-modal {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 420px;
+            width: 90%;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4 px-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4 class="mb-0">FullPort</h4>
+            <button id="signout-btn" class="btn btn-link btn-sm text-muted text-decoration-none">
+                <i class="bi bi-box-arrow-right me-1"></i>Sign Out
+            </button>
+        </div>
+        <div class="mb-3" id="market-status-header"></div>
+        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">Dashboard</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="holdings-tab" data-bs-toggle="tab" data-bs-target="#holdings" type="button" role="tab">Holdings</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">Analytics</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="rebalance-tab" data-bs-toggle="tab" data-bs-target="#rebalance" type="button" role="tab">Rebalance</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="dividend-tab" data-bs-toggle="tab" data-bs-target="#dividend" type="button" role="tab">Dividends</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">Settings</button>
+            </li>
+        </ul>
+        <div class="tab-content mt-3" id="mainTabsContent">
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                <div id="portfolio-info">Loading portfolio...</div>
+                <div id="oob-auth" style="display:none;">
+                    <div class="auth-overlay">
+                        <div class="auth-modal">
+                            <h5 class="mb-3">Connect to E*TRADE</h5>
+                            <p class="text-muted mb-4">Click below to authorize access to your E*TRADE account. A new window will open for secure authentication.</p>
+                            <button id="oob-auth-link" class="btn btn-primary w-100 mb-4" onclick="openETradeAuth()">
+                                Open E*TRADE Authorization
+                            </button>
+                            <div>
+                                <label for="oob-pin" class="form-label">Enter PIN from E*TRADE:</label>
+                                <div class="input-group">
+                                    <input type="text" id="oob-pin" class="form-control" placeholder="Enter PIN" />
+                                    <button id="oob-submit" class="btn btn-success">Submit</button>
+                                </div>
+                                <div id="oob-error" class="text-danger mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="holdings" role="tabpanel">
+                <div id="holdings-info">Loading holdings...</div>
+            </div>
+            <div class="tab-pane fade" id="analytics" role="tabpanel">
+                <div id="analytics-content">Loading analytics...</div>
+            </div>
+            <div class="tab-pane fade" id="rebalance" role="tabpanel">
+                <div id="rebalance-content">Loading rebalance...</div>
+            </div>
+            <div class="tab-pane fade" id="dividend" role="tabpanel">
+                <h5>Dividend Tracker</h5>
+                <p class="text-muted">Coming soon...</p>
+            </div>
+            <div class="tab-pane fade" id="settings" role="tabpanel">
+                <div id="settings-content"></div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // Utility functions
+        const formatCurrency = (val) => '$' + Number(val || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const formatPercent = (val) => Number(val || 0).toFixed(2) + '%';
+        const gainClass = (val) => val >= 0 ? 'gain-positive' : 'gain-negative';
+        const gainIcon = (val) => val >= 0 ? '▲' : '▼';
+
+        // Market hours utilities (US Eastern Time)
+        function getMarketStatus() {
+            const now = new Date();
+            // Convert to Eastern Time
+            const etOptions = { timeZone: 'America/New_York', hour: 'numeric', minute: 'numeric', hour12: false };
+            const etTime = new Intl.DateTimeFormat('en-US', etOptions).format(now);
+            const [hours, minutes] = etTime.split(':').map(Number);
+            const etMinutes = hours * 60 + minutes;
+
+            const dayOfWeek = new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short' });
+            const isWeekend = dayOfWeek === 'Sat' || dayOfWeek === 'Sun';
+
+            const marketOpen = 9 * 60 + 30;  // 9:30 AM ET
+            const marketClose = 16 * 60;      // 4:00 PM ET
+
+            const isOpen = !isWeekend && etMinutes >= marketOpen && etMinutes < marketClose;
+
+            // Format current ET time for display
+            const etDisplayTime = now.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', hour12: true });
+
+            let statusText, statusClass, nextEvent;
+            if (isWeekend) {
+                statusText = 'Market Closed (Weekend)';
+                statusClass = 'text-warning';
+                nextEvent = 'Opens Monday 9:30 AM ET';
+            } else if (etMinutes < marketOpen) {
+                const minsUntilOpen = marketOpen - etMinutes;
+                const hoursUntil = Math.floor(minsUntilOpen / 60);
+                const minsUntil = minsUntilOpen % 60;
+                statusText = 'Pre-Market';
+                statusClass = 'text-warning';
+                nextEvent = `Opens in ${hoursUntil > 0 ? hoursUntil + 'h ' : ''}${minsUntil}m`;
+            } else if (etMinutes >= marketClose) {
+                statusText = 'After Hours';
+                statusClass = 'text-warning';
+                nextEvent = 'Opens tomorrow 9:30 AM ET';
+            } else {
+                const minsUntilClose = marketClose - etMinutes;
+                const hoursUntil = Math.floor(minsUntilClose / 60);
+                const minsUntil = minsUntilClose % 60;
+                statusText = 'Market Open';
+                statusClass = 'text-success';
+                nextEvent = `Closes in ${hoursUntil > 0 ? hoursUntil + 'h ' : ''}${minsUntil}m`;
+            }
+
+            return { isOpen, statusText, statusClass, nextEvent, currentTime: etDisplayTime, dayOfWeek };
+        }
+
+        // Personalized greeting based on time of day
+        function getPersonalizedGreeting(userName = 'Investor') {
+            const now = new Date();
+            const hour = now.getHours();
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayName = days[now.getDay()];
+
+            let greeting;
+            if (hour < 12) {
+                greeting = 'Good Morning';
+            } else if (hour < 17) {
+                greeting = 'Good Afternoon';
+            } else {
+                greeting = 'Good Evening';
+            }
+
+            return {
+                greeting,
+                dayName,
+                fullGreeting: `${greeting}, ${userName}`,
+                dayMessage: `Happy ${dayName}!`,
+                dateFormatted: now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+            };
+        }
+
+        // Settings storage keys
+        const USER_NAME_KEY = 'fullport_user_name';
+        const SETTINGS_KEY = 'fullport_settings';
+
+        // Default settings
+        const DEFAULT_SETTINGS = {
+            displayName: 'Darrell',
+            defaultTab: 'dashboard',
+            cashReservePercent: 5,
+            minTradeValue: 50,
+            tolerancePercent: 2,
+            compactNumbers: false,
+            showMarketStatus: true,
+            autoRefreshMinutes: 0  // 0 = disabled
+        };
+
+        function getSettings() {
+            try {
+                const saved = localStorage.getItem(SETTINGS_KEY);
+                return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+            } catch {
+                return DEFAULT_SETTINGS;
+            }
+        }
+
+        function saveSettings(settings) {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        }
+
+        function getUserName() {
+            return getSettings().displayName || 'Darrell';
+        }
+
+        function setUserName(name) {
+            const settings = getSettings();
+            settings.displayName = name;
+            saveSettings(settings);
+        }
+
+        // Render settings page
+        function renderSettings() {
+            const settings = getSettings();
+            const savedPortfolios = getSavedPortfolios();
+
+            document.getElementById('settings-content').innerHTML = `
+                <div class="row">
+                    <div class="col-lg-8">
+                        <h5 class="mb-4">Settings</h5>
+
+                        <!-- User Profile -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-person me-2"></i>User Profile</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row align-items-center mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label mb-0">Display Name</label>
+                                        <small class="text-muted d-block">Used in personalized greetings</small>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <input type="text" id="setting-displayName" class="form-control" 
+                                               value="${settings.displayName}" placeholder="Enter your name">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Display Preferences -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-display me-2"></i>Display Preferences</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row align-items-center mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label mb-0">Default Tab</label>
+                                        <small class="text-muted d-block">Tab shown on startup</small>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <select id="setting-defaultTab" class="form-select">
+                                            <option value="dashboard" ${settings.defaultTab === 'dashboard' ? 'selected' : ''}>Dashboard</option>
+                                            <option value="holdings" ${settings.defaultTab === 'holdings' ? 'selected' : ''}>Holdings</option>
+                                            <option value="analytics" ${settings.defaultTab === 'analytics' ? 'selected' : ''}>Analytics</option>
+                                            <option value="rebalance" ${settings.defaultTab === 'rebalance' ? 'selected' : ''}>Rebalance</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row align-items-center mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label mb-0">Compact Numbers</label>
+                                        <small class="text-muted d-block">Show 1.2K instead of 1,200</small>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="form-check form-switch">
+                                            <input type="checkbox" id="setting-compactNumbers" class="form-check-input" 
+                                                   ${settings.compactNumbers ? 'checked' : ''}>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row align-items-center">
+                                    <div class="col-md-4">
+                                        <label class="form-label mb-0">Show Market Status</label>
+                                        <small class="text-muted d-block">Display market open/closed indicator</small>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="form-check form-switch">
+                                            <input type="checkbox" id="setting-showMarketStatus" class="form-check-input" 
+                                                   ${settings.showMarketStatus ? 'checked' : ''}>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Portfolio Defaults -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-sliders me-2"></i>Portfolio Builder Defaults</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row align-items-center mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label mb-0">Cash Reserve %</label>
+                                        <small class="text-muted d-block">Default cash to keep uninvested</small>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="input-group" style="max-width: 150px;">
+                                            <input type="number" id="setting-cashReservePercent" class="form-control" 
+                                                   value="${settings.cashReservePercent}" min="0" max="50" step="1">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row align-items-center mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label mb-0">Minimum Trade Value</label>
+                                        <small class="text-muted d-block">Skip trades below this amount</small>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="input-group" style="max-width: 150px;">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" id="setting-minTradeValue" class="form-control" 
+                                                   value="${settings.minTradeValue}" min="0" max="500" step="10">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row align-items-center">
+                                    <div class="col-md-4">
+                                        <label class="form-label mb-0">Rebalance Tolerance %</label>
+                                        <small class="text-muted d-block">Don't trade if within this % of target</small>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="input-group" style="max-width: 150px;">
+                                            <input type="number" id="setting-tolerancePercent" class="form-control" 
+                                                   value="${settings.tolerancePercent}" min="0" max="10" step="0.5">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Management -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-database me-2"></i>Data Management</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row align-items-center mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label mb-0">Saved Portfolios</label>
+                                        <small class="text-muted d-block">${savedPortfolios.length} portfolio(s) saved</small>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <button class="btn btn-outline-danger btn-sm" onclick="clearSavedPortfolios()" 
+                                                ${savedPortfolios.length === 0 ? 'disabled' : ''}>
+                                            <i class="bi bi-trash me-1"></i>Clear All Saved Portfolios
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="row align-items-center">
+                                    <div class="col-md-4">
+                                        <label class="form-label mb-0">All Settings</label>
+                                        <small class="text-muted d-block">Reset to defaults</small>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <button class="btn btn-outline-warning btn-sm" onclick="resetAllSettings()">
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Defaults
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Save Button -->
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary" onclick="saveAllSettings()">
+                                <i class="bi bi-check-lg me-1"></i>Save Settings
+                            </button>
+                            <span id="settings-save-status" class="align-self-center text-success" style="display:none;">
+                                <i class="bi bi-check-circle me-1"></i>Saved!
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="col-lg-4">
+                        <!-- Connection Status -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-plug me-2"></i>E*TRADE Connection</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <span class="text-success me-2">●</span>
+                                    <span>Connected to E*TRADE API</span>
+                                </div>
+                                <button class="btn btn-outline-secondary btn-sm w-100 mb-2" onclick="window.open('https://us.etrade.com/etx/hw/accountshome', '_blank')">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>Open E*TRADE
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm w-100" onclick="document.getElementById('signout-btn').click()">
+                                    <i class="bi bi-box-arrow-right me-1"></i>Disconnect & Sign Out
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- About -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>About FullPort</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="small text-muted mb-2">
+                                    FullPort is a portfolio management tool that integrates with E*TRADE to help you track, analyze, and rebalance your investments.
+                                </p>
+                                <p class="small text-muted mb-0">
+                                    <strong>Version:</strong> 1.0.0<br>
+                                    <strong>API:</strong> E*TRADE v1
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function saveAllSettings() {
+            const settings = {
+                displayName: document.getElementById('setting-displayName').value || 'Darrell',
+                defaultTab: document.getElementById('setting-defaultTab').value,
+                compactNumbers: document.getElementById('setting-compactNumbers').checked,
+                showMarketStatus: document.getElementById('setting-showMarketStatus').checked,
+                cashReservePercent: parseFloat(document.getElementById('setting-cashReservePercent').value) || 5,
+                minTradeValue: parseFloat(document.getElementById('setting-minTradeValue').value) || 50,
+                tolerancePercent: parseFloat(document.getElementById('setting-tolerancePercent').value) || 2
+            };
+            saveSettings(settings);
+
+            // Show saved status
+            const status = document.getElementById('settings-save-status');
+            status.style.display = 'inline';
+            setTimeout(() => { status.style.display = 'none'; }, 2000);
+        }
+
+        function clearSavedPortfolios() {
+            if (confirm('Are you sure you want to delete all saved portfolios? This cannot be undone.')) {
+                localStorage.removeItem(SAVED_PORTFOLIOS_KEY);
+                renderSettings();
+            }
+        }
+
+        function resetAllSettings() {
+            if (confirm('Reset all settings to defaults? Your saved portfolios will NOT be deleted.')) {
+                localStorage.removeItem(SETTINGS_KEY);
+                renderSettings();
+            }
+        }
+
+        // Market indices data (will be fetched from API)
+        let marketIndices = null;
+
+        async function fetchMarketIndices() {
+            try {
+                const resp = await fetch('/api/market/indices');
+                if (resp.ok) {
+                    marketIndices = await resp.json();
+                    return marketIndices;
+                }
+            } catch (e) {
+                console.log('Could not fetch market indices:', e);
+            }
+            return null;
+        }
+
+        function renderMarketStatusBadge() {
+            const status = getMarketStatus();
+            return `
+                <div class="d-inline-flex align-items-center px-2 py-1 rounded ${status.isOpen ? 'bg-success bg-opacity-10' : 'bg-warning bg-opacity-10'}">
+                    <span class="me-2 ${status.statusClass}" style="width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block;"></span>
+                    <small class="${status.statusClass} fw-bold">${status.statusText}</small>
+                    <small class="text-muted ms-2">${status.currentTime} ET</small>
+                    <small class="text-muted ms-2">• ${status.nextEvent}</small>
+                </div>
+            `;
+        }
+
+        // Saved portfolios utilities
+        const SAVED_PORTFOLIOS_KEY = 'fullport_saved_portfolios';
+
+        function getSavedPortfolios() {
+            try {
+                const saved = localStorage.getItem(SAVED_PORTFOLIOS_KEY);
+                return saved ? JSON.parse(saved) : [];
+            } catch {
+                return [];
+            }
+        }
+
+        function savePortfolio(name) {
+            if (!portfolioBuildItems || portfolioBuildItems.length === 0) {
+                alert('No portfolio items to save');
+                return false;
+            }
+
+            const portfolios = getSavedPortfolios();
+            const newPortfolio = {
+                id: Date.now(),
+                name: name,
+                savedAt: new Date().toISOString(),
+                modelIndex: builderSelectedModel,
+                items: portfolioBuildItems.map(item => ({
+                    symbol: item.symbol,
+                    name: item.name,
+                    assetClass: item.assetClass,
+                    targetPercent: item.targetPercent,
+                    fixedShares: item.fixedShares,
+                    isCustom: item.isCustom
+                }))
+            };
+
+            // Check for duplicate name and update if exists
+            const existingIdx = portfolios.findIndex(p => p.name === name);
+            if (existingIdx >= 0) {
+                portfolios[existingIdx] = newPortfolio;
+            } else {
+                portfolios.push(newPortfolio);
+            }
+
+            localStorage.setItem(SAVED_PORTFOLIOS_KEY, JSON.stringify(portfolios));
+            return true;
+        }
+
+        function loadSavedPortfolio(portfolioId) {
+            const portfolios = getSavedPortfolios();
+            const portfolio = portfolios.find(p => p.id === portfolioId);
+            if (!portfolio) return false;
+
+            builderSelectedModel = portfolio.modelIndex;
+            portfolioBuildItems = portfolio.items.map(item => ({...item}));
+            buildResult = null;
+
+            return true;
+        }
+
+        function deleteSavedPortfolio(portfolioId) {
+            const portfolios = getSavedPortfolios().filter(p => p.id !== portfolioId);
+            localStorage.setItem(SAVED_PORTFOLIOS_KEY, JSON.stringify(portfolios));
+        }
+
+        // Render market indices strip
+        function renderMarketIndices(data) {
+            if (!data || !data.indices || data.indices.length === 0) {
+                return `<span class="text-muted small">Market data loading...</span>`;
+            }
+
+            return data.indices.map(idx => {
+                if (idx.noData) {
+                    return `
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold small me-2">${idx.name}</span>
+                            <span class="text-muted small">—</span>
+                        </div>
+                    `;
+                }
+                const changeClass = idx.isUp ? 'text-success' : 'text-danger';
+                const arrow = idx.isUp ? '▲' : '▼';
+                return `
+                    <div class="d-flex align-items-center">
+                        <span class="fw-bold small me-2">${idx.name}</span>
+                        <span class="small me-1">${formatCurrency(idx.price)}</span>
+                        <span class="${changeClass} small">${arrow} ${Math.abs(idx.changePercent).toFixed(2)}%</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Prompt user for their name
+        function promptUserName() {
+            const currentName = getUserName();
+            const newName = prompt('Enter your name for personalized greetings:', currentName === 'Investor' ? '' : currentName);
+            if (newName && newName.trim()) {
+                setUserName(newName.trim());
+                loadPortfolio(); // Refresh to show new name
+            }
+        }
+
+        let holdingsData = null;
+        let sortColumn = 'totalMarketValue';
+        let sortAsc = false;
+        let etradeAuthUrl = null;
+
+        // Open E*TRADE auth in a centered popup window
+        function openETradeAuth() {
+            if (!etradeAuthUrl) {
+                alert('Authorization URL not ready. Please wait...');
+                return;
+            }
+            const width = 600;
+            const height = 700;
+            const left = (screen.width - width) / 2;
+            const top = (screen.height - height) / 2;
+            window.open(
+                etradeAuthUrl,
+                'ETradeAuth',
+                `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
+            );
+        }
+
+        async function fetchAuthInfo() {
+            const resp = await fetch('/api/portfolio/authenticate');
+            try {
+                const json = await resp.json();
+                if (json.oauthToken) {
+                    window._oobToken = json.oauthToken;
+                    if (json.authorizeUrl) {
+                        etradeAuthUrl = json.authorizeUrl;
+                    }
+                }
+            } catch {}
+        }
+
+        async function loadPortfolio() {
+            document.getElementById('portfolio-info').innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading portfolio...</p></div>';
+
+            // Fetch market indices in parallel with portfolio data
+            const [resp, indicesData] = await Promise.all([
+                fetch('/api/portfolio'),
+                fetchMarketIndices()
+            ]);
+
+            let data = null;
+            try {
+                data = await resp.json();
+            } catch {
+                data = null;
+            }
+
+            if (resp.ok && data && data.accounts && data.summary) {
+                const summary = data.summary;
+                const accounts = data.accounts;
+                const cashPct = summary.totalPortfolioValue > 0 ? ((summary.totalCash / summary.totalPortfolioValue) * 100).toFixed(1) : 0;
+                const investedPct = (100 - cashPct).toFixed(1);
+                const greeting = getPersonalizedGreeting(getUserName());
+                const marketStatus = getMarketStatus();
+
+                // Helper for gain/loss color - neutral for 0
+                const getGainClass = (value) => {
+                    if (value > 0) return 'text-success';
+                    if (value < 0) return 'text-danger';
+                    return 'text-muted';
+                };
+                const getGainBgClass = (value) => {
+                    if (value > 0) return 'bg-success';
+                    if (value < 0) return 'bg-danger';
+                    return 'bg-secondary';
+                };
+
+                let html = `
+                <!-- Personalized Greeting Header -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2 class="mb-1">${greeting.fullGreeting}</h2>
+                        <p class="text-muted mb-0">${greeting.dayMessage} ${greeting.dateFormatted}</p>
+                    </div>
+                </div>
+
+                <!-- Market Overview Strip - Only show when market is open or has data -->
+                ${marketStatus.isOpen ? `
+                <div class="card mb-4 border-0 bg-light">
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-success" style="width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block;"></span>
+                                <span class="text-muted small fw-bold">MARKETS OPEN</span>
+                            </div>
+                            <div class="d-flex gap-4 flex-wrap" id="market-indices">
+                                ${renderMarketIndices(indicesData)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                ` : `
+                <div class="card mb-4 border-0" style="background: #f8f9fa;">
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-warning" style="width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block;"></span>
+                                <span class="text-muted small fw-bold">${marketStatus.statusText.toUpperCase()}</span>
+                                <span class="text-muted small">• ${marketStatus.nextEvent}</span>
+                            </div>
+                            <span class="text-muted small">${marketStatus.currentTime} ET</span>
+                        </div>
+                    </div>
+                </div>
+                `}
+
+                <!-- Main Portfolio Value Card -->
+                <div class="summary-card p-4 mb-4">
+                    <div class="row align-items-center">
+                        <div class="col-lg-5 mb-3 mb-lg-0">
+                            <div class="label mb-1">Total Portfolio Value</div>
+                            <h1 class="value mb-0" style="font-size: 2.75rem;">${formatCurrency(summary.totalPortfolioValue)}</h1>
+                            <div class="d-flex align-items-center mt-2">
+                                <span class="badge ${getGainBgClass(summary.totalDayGain)} me-2">
+                                    ${summary.totalDayGain > 0 ? '▲' : summary.totalDayGain < 0 ? '▼' : '–'} ${formatCurrency(Math.abs(summary.totalDayGain || 0))}
+                                </span>
+                                <small class="${getGainClass(summary.totalDayGain)}">
+                                    ${summary.totalDayGainPercent > 0 ? '+' : ''}${(summary.totalDayGainPercent || 0).toFixed(2)}% today
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-lg-7">
+                            <div class="row g-3">
+                                <div class="col-6 col-md-3">
+                                    <div class="label">Cash</div>
+                                    <div class="value h5 mb-0" style="color: #e2e8f0;">${formatCurrency(summary.totalCash)}</div>
+                                    <small class="opacity-75">${cashPct}%</small>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="label">Invested</div>
+                                    <div class="value h5 mb-0">${formatCurrency(summary.totalSecurities)}</div>
+                                    <small class="opacity-75">${investedPct}%</small>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="label">Positions</div>
+                                    <div class="value h5 mb-0">${summary.totalPositions || '—'}</div>
+                                    <small class="opacity-75">${summary.totalAccounts} accounts</small>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="label">Buying Power</div>
+                                    <div class="value h5 mb-0" style="color: #e2e8f0;">${formatCurrency(summary.totalCash)}</div>
+                                    <small class="opacity-75">Available</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- External Actions Row -->
+                <div class="row mb-4 g-3">
+                    <div class="col-6 col-md-4">
+                        <a href="https://us.etrade.com/etx/pxy/transfer-money" target="_blank" class="btn btn-success w-100 py-3 text-decoration-none">
+                            <i class="bi bi-plus-circle fs-4 d-block mb-1"></i>
+                            <span class="small">Deposit Funds</span>
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <a href="https://us.etrade.com/etx/hw/accountshome" target="_blank" class="btn btn-outline-primary w-100 py-3 text-decoration-none">
+                            <i class="bi bi-box-arrow-up-right fs-4 d-block mb-1"></i>
+                            <span class="small">Open E*TRADE</span>
+                        </a>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <button class="btn btn-outline-secondary w-100 py-3" onclick="loadPortfolio()">
+                            <i class="bi bi-arrow-clockwise fs-4 d-block mb-1"></i>
+                            <span class="small">Refresh Data</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="row mb-4 g-3">
+                    <div class="col-md-6 col-lg-3">
+                        <div class="stat-card p-3 h-100">
+                            <div class="d-flex align-items-center">
+                                <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3">
+                                    <i class="bi bi-pie-chart"></i>
+                                </div>
+                                <div>
+                                    <div class="small text-muted">Allocation</div>
+                                    <div class="fw-bold">${investedPct}% Invested</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="stat-card p-3 h-100">
+                            <div class="d-flex align-items-center">
+                                <div class="stat-icon bg-info bg-opacity-10 text-info me-3">
+                                    <i class="bi bi-cash-stack"></i>
+                                </div>
+                                <div>
+                                    <div class="small text-muted">Cash Reserve</div>
+                                    <div class="fw-bold">${formatCurrency(summary.totalCash)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="stat-card p-3 h-100">
+                            <div class="d-flex align-items-center">
+                                <div class="stat-icon bg-purple bg-opacity-10 text-purple me-3" style="background: rgba(139, 92, 246, 0.1) !important; color: #8b5cf6 !important;">
+                                    <i class="bi bi-building"></i>
+                                </div>
+                                <div>
+                                    <div class="small text-muted">Accounts</div>
+                                    <div class="fw-bold">${summary.totalAccounts} Active</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="stat-card p-3 h-100">
+                            <div class="d-flex align-items-center">
+                                <div class="stat-icon bg-warning bg-opacity-10 text-warning me-3">
+                                    <i class="bi bi-clock-history"></i>
+                                </div>
+                                <div>
+                                    <div class="small text-muted">Last Updated</div>
+                                    <div class="fw-bold">${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts & Top Holdings Row -->
+                <div class="row mb-4 g-3">
+                    <div class="col-lg-4">
+                        <div class="chart-card p-3 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Asset Allocation</h6>
+                            </div>
+                            <div class="d-flex justify-content-center">
+                                <div style="max-width:200px; width:100%;"><canvas id="allocationChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="chart-card p-3 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Account Breakdown</h6>
+                            </div>
+                            <div class="d-flex justify-content-center">
+                                <div style="max-width:200px; width:100%;"><canvas id="accountChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="chart-card p-3 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Top Holdings</h6>
+                            </div>
+                            <div class="d-flex justify-content-center">
+                                <div style="max-width:200px; width:100%;"><canvas id="holdingsChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accounts Section -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="bi bi-wallet2 me-2"></i>Your Accounts</h5>
+                </div>
+                <div class="row g-3">`;
+
+                // Count active/inactive for dynamic status
+                const activeCount = accounts.filter(a => a.accountStatus === 'ACTIVE').length;
+                const inactiveCount = accounts.length - activeCount;
+
+                accounts.forEach((acct) => {
+                    const bal = acct.balance || {};
+                    const cash = bal.cash || 0;
+                    const securities = bal.securities || 0;
+                    const total = bal.totalValue || 0;
+                    const isActive = acct.accountStatus === 'ACTIVE';
+                    const acctCashPct = total > 0 ? ((cash / total) * 100) : 0;
+                    const dayGain = bal.dayGain || 0;
+                    const dayGainPct = bal.dayGainPercent || 0;
+
+                    html += `
+                    <div class="col-md-6 col-xl-4">
+                        <div class="account-card p-3 h-100">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="mb-0">${acct.accountDesc || 'Account'}</h6>
+                                    <small class="text-muted">${acct.accountType || ''} • ****${(acct.accountId || '').slice(-4)}</small>
+                                </div>
+                                <span class="badge ${isActive ? 'bg-success' : 'bg-secondary'}">${acct.accountStatus || ''}</span>
+                            </div>
+                            <div class="mb-2">
+                                <h4 class="mb-1">${formatCurrency(total)}</h4>
+                                <small class="${getGainClass(dayGain)}">
+                                    ${dayGain > 0 ? '+' : ''}${formatCurrency(dayGain)} (${dayGainPct > 0 ? '+' : ''}${dayGainPct.toFixed(2)}%)
+                                </small>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted small">Cash ${acctCashPct.toFixed(0)}%</span>
+                                    <span class="text-muted small">Invested ${(100 - acctCashPct).toFixed(0)}%</span>
+                                </div>
+                                <div class="progress" style="height: 6px; border-radius: 4px;">
+                                    <div class="progress-bar" style="width: ${acctCashPct}%; background: #60a5fa;"></div>
+                                    <div class="progress-bar bg-primary" style="width: ${100 - acctCashPct}%"></div>
+                                </div>
+                            </div>
+                            <div class="row text-center g-0 small">
+                                <div class="col-4 border-end">
+                                    <div class="text-muted">Cash</div>
+                                    <div class="fw-bold">${formatCurrency(cash)}</div>
+                                </div>
+                                <div class="col-4 border-end">
+                                    <div class="text-muted">Invested</div>
+                                    <div class="fw-bold">${formatCurrency(securities)}</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-muted">Positions</div>
+                                    <div class="fw-bold">${bal.positions || '—'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+
+                html += `</div>
+
+                <!-- Dynamic Account Status -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body py-3">
+                                <div class="d-flex flex-wrap gap-4 align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <span class="${activeCount > 0 ? 'text-success' : 'text-secondary'} me-2">●</span>
+                                        <span class="small text-muted">${activeCount} ${activeCount === 1 ? 'account' : 'accounts'} active</span>
+                                    </div>
+                                    ${inactiveCount > 0 ? `
+                                    <div class="d-flex align-items-center">
+                                        <span class="text-warning me-2">●</span>
+                                        <span class="small text-muted">${inactiveCount} inactive</span>
+                                    </div>
+                                    ` : ''}
+                                    <div class="d-flex align-items-center">
+                                        <span class="text-success me-2">●</span>
+                                        <span class="small text-muted">E*TRADE API connected</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <span class="${marketStatus.isOpen ? 'text-success' : 'text-warning'} me-2">●</span>
+                                        <span class="small text-muted">${marketStatus.statusText}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+
+                document.getElementById('portfolio-info').innerHTML = html;
+                document.getElementById('oob-auth').style.display = 'none';
+
+                // Draw charts with cleaner styling
+                const chartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 8,
+                                font: { size: 11 }
+                            }
+                        }
+                    }
+                };
+
+                setTimeout(() => {
+                    new Chart(document.getElementById('allocationChart').getContext('2d'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Cash', 'Invested'],
+                            datasets: [{
+                                data: [summary.totalCash, summary.totalSecurities],
+                                backgroundColor: ['#10b981', '#6366f1'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: chartOptions
+                    });
+
+                    const acctLabels = accounts.map(a => a.accountDesc || a.accountId || 'Account');
+                    const acctValues = accounts.map(a => (a.balance && a.balance.totalValue) || 0);
+                    new Chart(document.getElementById('accountChart').getContext('2d'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: acctLabels,
+                            datasets: [{
+                                data: acctValues,
+                                backgroundColor: ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#64748b'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: chartOptions
+                    });
+                }, 100);
+
+                // Load holdings for the chart
+                loadHoldings(true);
+
+            } else if (resp.status === 401 && data && data.authUrl) {
+                document.getElementById('portfolio-info').innerHTML = `<div class="alert alert-info">${data.message}</div>`;
+                document.getElementById('oob-auth').style.display = '';
+                fetchAuthInfo();
+            } else if (data && data.message) {
+                document.getElementById('portfolio-info').innerHTML = `<div class="alert alert-warning">${data.message}</div>`;
+                document.getElementById('oob-auth').style.display = 'none';
+            } else {
+                document.getElementById('portfolio-info').innerHTML = `<div class="alert alert-danger">Unexpected response from server.</div>`;
+                document.getElementById('oob-auth').style.display = 'none';
+            }
+        }
+
+        // Track chart instances for cleanup
+        let holdingsChartInstance = null;
+
+        async function loadHoldings(chartOnly = false) {
+            console.log('loadHoldings called, chartOnly:', chartOnly);
+
+            if (!chartOnly) {
+                document.getElementById('holdings-info').innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Fetching positions...</p></div>';
+            }
+
+            try {
+                // Try the simple endpoint first (more reliable), then detailed if that works
+                console.log('Fetching /api/portfolio/all-positions...');
+                const resp = await fetch('/api/portfolio/all-positions');
+                console.log('Response status:', resp.status, 'ok:', resp.ok);
+
+                let data = null;
+
+                try {
+                    data = await resp.json();
+                    console.log('Response data:', data);
+                } catch (parseErr) {
+                    console.error('Failed to parse JSON:', parseErr);
+                    data = null;
+                }
+
+                // Check for 401 - user needs to authenticate
+                if (resp.status === 401 || !resp.ok) {
+                    console.log('Authentication required or error');
+                    if (!chartOnly) {
+                        document.getElementById('holdings-info').innerHTML = `
+                            <div class="alert alert-warning">
+                                <h5>Authentication Required</h5>
+                                <p>Please authenticate with E*TRADE first via the <strong>Dashboard</strong> tab to view your holdings.</p>
+                                <p class="small text-muted mb-2">Status: ${resp.status} - ${data?.message || 'Not authenticated'}</p>
+                                <button class="btn btn-primary" onclick="document.getElementById('dashboard-tab').click();">
+                                    Go to Dashboard
+                                </button>
+                            </div>`;
+                    }
+                    return;
+                }
+
+                // If simple endpoint works, try to get detailed data for full view
+                if (resp.ok && data && data.holdings && !chartOnly) {
+                    console.log('Got simple data, trying detailed endpoint...');
+                    try {
+                        const detailedResp = await fetch('/api/portfolio/holdings-detailed');
+                        if (detailedResp.ok) {
+                            const detailedData = await detailedResp.json();
+                            if (detailedData && detailedData.holdings) {
+                                data = detailedData;
+                                console.log('Using detailed data');
+                            }
+                        }
+                    } catch (e) {
+                        console.log('Detailed endpoint failed, using simple data:', e);
+                    }
+                }
+
+                if (data && data.holdings) {
+                    console.log('Rendering holdings, count:', data.holdings.length);
+                    holdingsData = data;
+
+                    // Update holdings chart on dashboard - destroy old chart first
+                    const chartCanvas = document.getElementById('holdingsChart');
+                    if (chartCanvas && data.holdings.length > 0) {
+                        // Destroy existing chart if it exists
+                        if (holdingsChartInstance) {
+                            holdingsChartInstance.destroy();
+                            holdingsChartInstance = null;
+                        }
+
+                        const topHoldings = data.holdings.slice(0, 6);
+                        holdingsChartInstance = new Chart(chartCanvas.getContext('2d'), {
+                            type: 'doughnut',
+                            data: {
+                                labels: topHoldings.map(h => h.symbol || h.Symbol),
+                                datasets: [{
+                                    data: topHoldings.map(h => h.marketValue || h.totalMarketValue),
+                                    backgroundColor: ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4'],
+                                    borderWidth: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: true,
+                                cutout: '60%',
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: { boxWidth: 12, padding: 8, font: { size: 11 } }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    if (!chartOnly) {
+                        renderDetailedHoldings(data);
+                    }
+                } else if (!chartOnly) {
+                    document.getElementById('holdings-info').innerHTML = `
+                        <div class="alert alert-info">
+                            ${data?.message || 'No holdings found. Your portfolio may be empty or still loading.'}
+                        </div>`;
+                }
+            } catch (err) {
+                console.error('Error loading holdings:', err);
+                if (!chartOnly) {
+                    document.getElementById('holdings-info').innerHTML = `
+                        <div class="alert alert-danger">
+                            Error loading holdings: ${err.message}
+                            <br><small class="text-muted">Try refreshing the page or re-authenticating via the Dashboard.</small>
+                        </div>`;
+                }
+            }
+        }
+
+        // Holdings view state
+        let holdingsViewMode = 'table'; // 'table', 'cards', 'compact'
+        let holdingsFilter = { assetClass: 'all', gainLoss: 'all', search: '' };
+        let expandedHoldings = new Set();
+
+        function renderDetailedHoldings(data) {
+            const summary = data.summary || {};
+            const performance = data.performance || {};
+            const diversification = data.diversification || {};
+            const income = data.income || {};
+            let holdings = [...data.holdings];
+
+            // Normalize holdings data (handle both detailed and simple formats)
+            holdings = holdings.map(h => ({
+                symbol: h.symbol || h.Symbol || '',
+                description: h.description || h.Description || '',
+                assetClass: h.assetClass || h.AssetClass || 'Other',
+                quantity: h.quantity || h.totalQuantity || h.TotalQuantity || 0,
+                marketValue: h.marketValue || h.totalMarketValue || h.TotalMarketValue || 0,
+                costBasis: h.costBasis || h.totalCostBasis || h.TotalCostBasis || 0,
+                avgCostPerShare: h.avgCostPerShare || (h.costBasis && h.quantity ? h.costBasis / h.quantity : 0),
+                currentPrice: h.currentPrice || h.Price || 0,
+                dayChange: h.dayChange || 0,
+                dayChangePercent: h.dayChangePercent || 0,
+                dayGain: h.dayGain || h.totalDayGain || h.TotalDayGain || 0,
+                totalGain: h.totalGain || h.TotalGain || 0,
+                totalGainPercent: h.totalGainPercent || h.TotalGainPercent || 0,
+                portfolioPercent: h.portfolioPercent || h.PortfolioPercent || 0,
+                dividendYield: h.dividendYield || 0,
+                annualDividendIncome: h.annualDividendIncome || 0,
+                lots: h.lots || [],
+                lotCount: h.lotCount || 0,
+                bid: h.bid || 0,
+                ask: h.ask || 0,
+                high52Week: h.high52Week || 0,
+                low52Week: h.low52Week || 0,
+                range52WeekPercent: h.range52WeekPercent || 0,
+                volume: h.volume || 0,
+                avgVolume: h.avgVolume || 0,
+                volumeVsAvg: h.volumeVsAvg || 0,
+                peRatio: h.peRatio || 0,
+                marketCap: h.marketCap || 0,
+                beta: h.beta || 0,
+                spread: h.spread || 0,
+                spreadPercent: h.spreadPercent || 0,
+                yieldOnCost: h.yieldOnCost || 0,
+                dividend: h.dividend || 0,
+                exDividendDate: h.exDividendDate || null
+            }));
+
+            // Apply filters
+            if (holdingsFilter.assetClass !== 'all') {
+                holdings = holdings.filter(h => h.assetClass === holdingsFilter.assetClass);
+            }
+            if (holdingsFilter.gainLoss === 'winners') {
+                holdings = holdings.filter(h => h.totalGain > 0);
+            } else if (holdingsFilter.gainLoss === 'losers') {
+                holdings = holdings.filter(h => h.totalGain < 0);
+            }
+            if (holdingsFilter.search) {
+                const searchLower = holdingsFilter.search.toLowerCase();
+                holdings = holdings.filter(h => 
+                    h.symbol.toLowerCase().includes(searchLower) || 
+                    (h.description && h.description.toLowerCase().includes(searchLower))
+                );
+            }
+
+            // Sort holdings
+            holdings.sort((a, b) => {
+                let valA = a[sortColumn] || 0;
+                let valB = b[sortColumn] || 0;
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+                if (sortAsc) return valA > valB ? 1 : -1;
+                return valA < valB ? 1 : -1;
+            });
+
+            let html = `
+            <!-- Holdings Summary Header -->
+            <div class="summary-card p-4 mb-4">
+                <div class="row g-3">
+                    <div class="col-6 col-md-2">
+                        <div class="label">Market Value</div>
+                        <div class="value h4 mb-0">${formatCurrency(summary.totalMarketValue)}</div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="label">Day's Change</div>
+                        <div class="value h5 mb-0 ${summary.totalDayGain >= 0 ? '' : 'text-warning'}">${gainIcon(summary.totalDayGain)} ${formatCurrency(Math.abs(summary.totalDayGain))}</div>
+                        <small class="opacity-75">${summary.totalDayGainPercent >= 0 ? '+' : ''}${summary.totalDayGainPercent?.toFixed(2) || 0}%</small>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="label">Total Return</div>
+                        <div class="value h5 mb-0 ${summary.totalGain >= 0 ? '' : 'text-warning'}">${gainIcon(summary.totalGain)} ${formatCurrency(Math.abs(summary.totalGain))}</div>
+                        <small class="opacity-75">${summary.totalGainPercent >= 0 ? '+' : ''}${summary.totalGainPercent?.toFixed(2) || 0}%</small>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="label">Win Rate</div>
+                        <div class="value h5 mb-0">${summary.winRate?.toFixed(0) || 0}%</div>
+                        <small class="opacity-75">${summary.winningPositions}W / ${summary.losingPositions}L</small>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="label">Annual Dividends</div>
+                        <div class="value h5 mb-0">${formatCurrency(income?.totalAnnualDividends || 0)}</div>
+                        <small class="opacity-75">${income?.portfolioYield?.toFixed(2) || 0}% yield</small>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="label">Positions</div>
+                        <div class="value h5 mb-0">${summary.totalPositions}</div>
+                        <small class="opacity-75">${diversification?.effectivePositions?.toFixed(1) || 0} effective</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Highlights -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="chart-card p-3 h-100">
+                        <h6 class="small text-muted mb-2">Best Performer</h6>
+                        ${performance?.bestPerformer ? `
+                            <div class="d-flex align-items-center">
+                                <span class="symbol-badge text-primary h5 mb-0 me-2">${performance.bestPerformer.symbol}</span>
+                                <span class="text-success h5 mb-0">+${performance.bestPerformer.totalGainPercent?.toFixed(2)}%</span>
+                            </div>
+                            <small class="text-muted">${formatCurrency(performance.bestPerformer.totalGain)} gain</small>
+                        ` : '<span class="text-muted">-</span>'}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="chart-card p-3 h-100">
+                        <h6 class="small text-muted mb-2">Worst Performer</h6>
+                        ${performance?.worstPerformer ? `
+                            <div class="d-flex align-items-center">
+                                <span class="symbol-badge text-primary h5 mb-0 me-2">${performance.worstPerformer.symbol}</span>
+                                <span class="text-danger h5 mb-0">${performance.worstPerformer.totalGainPercent?.toFixed(2)}%</span>
+                            </div>
+                            <small class="text-muted">${formatCurrency(performance.worstPerformer.totalGain)} loss</small>
+                        ` : '<span class="text-muted">-</span>'}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="chart-card p-3 h-100">
+                        <h6 class="small text-muted mb-2">Largest Position</h6>
+                        ${performance?.largestPosition ? `
+                            <div class="d-flex align-items-center">
+                                <span class="symbol-badge text-primary h5 mb-0 me-2">${performance.largestPosition.symbol}</span>
+                                <span class="h5 mb-0">${performance.largestPosition.portfolioPercent?.toFixed(1)}%</span>
+                            </div>
+                            <small class="text-muted">${formatCurrency(performance.largestPosition.marketValue)}</small>
+                        ` : '<span class="text-muted">-</span>'}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters and View Controls -->
+            <div class="chart-card mb-4">
+                <div class="p-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <h6 class="mb-0">Holdings</h6>
+                        <span class="badge bg-secondary">${holdings.length} positions</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <select class="form-select form-select-sm" style="width: 140px;" onchange="filterByAssetClass(this.value)">
+                            <option value="all" ${holdingsFilter.assetClass === 'all' ? 'selected' : ''}>All Classes</option>
+                            ${diversification?.byAssetClass?.map(ac => `
+                                <option value="${ac.assetClass}" ${holdingsFilter.assetClass === ac.assetClass ? 'selected' : ''}>${ac.assetClass} (${ac.count})</option>
+                            `).join('') || ''}
+                        </select>
+                        <select class="form-select form-select-sm" style="width: 120px;" onchange="filterByGainLoss(this.value)">
+                            <option value="all" ${holdingsFilter.gainLoss === 'all' ? 'selected' : ''}>All</option>
+                            <option value="winners" ${holdingsFilter.gainLoss === 'winners' ? 'selected' : ''}>Winners</option>
+                            <option value="losers" ${holdingsFilter.gainLoss === 'losers' ? 'selected' : ''}>Losers</option>
+                        </select>
+                        <input type="text" class="form-control form-control-sm" style="width: 150px;" placeholder="Search..." value="${holdingsFilter.search}" oninput="filterBySearch(this.value)">
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn ${holdingsViewMode === 'table' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setViewMode('table')" title="Table View">
+                                <i class="bi bi-table"></i>
+                            </button>
+                            <button class="btn ${holdingsViewMode === 'cards' ? 'btn-primary' : 'btn-outline-secondary'}" onclick="setViewMode('cards')" title="Card View">
+                                <i class="bi bi-grid-3x2-gap"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                ${holdingsViewMode === 'table' ? renderHoldingsTable(holdings) : renderHoldingsCards(holdings)}
+            </div>
+            `;
+
+            document.getElementById('holdings-info').innerHTML = html;
+        }
+
+        function renderHoldingsTable(holdings) {
+            return `
+                <div class="table-responsive">
+                    <table class="table table-hover table-holdings mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="sort-btn" onclick="sortHoldings('symbol')">Symbol ${sortColumn === 'symbol' ? (sortAsc ? '▲' : '▼') : ''}</th>
+                                <th class="text-end sort-btn" onclick="sortHoldings('currentPrice')">Price ${sortColumn === 'currentPrice' ? (sortAsc ? '▲' : '▼') : ''}</th>
+                                <th class="text-end sort-btn" onclick="sortHoldings('dayChangePercent')">Day ${sortColumn === 'dayChangePercent' ? (sortAsc ? '▲' : '▼') : ''}</th>
+                                <th class="text-end sort-btn" onclick="sortHoldings('quantity')">Shares ${sortColumn === 'quantity' ? (sortAsc ? '▲' : '▼') : ''}</th>
+                                <th class="text-end sort-btn" onclick="sortHoldings('marketValue')">Value ${sortColumn === 'marketValue' ? (sortAsc ? '▲' : '▼') : ''}</th>
+                                <th class="text-end sort-btn" onclick="sortHoldings('avgCostPerShare')">Avg Cost ${sortColumn === 'avgCostPerShare' ? (sortAsc ? '▲' : '▼') : ''}</th>
+                                <th class="text-end sort-btn" onclick="sortHoldings('totalGain')">Total Gain ${sortColumn === 'totalGain' ? (sortAsc ? '▲' : '▼') : ''}</th>
+                                <th class="text-end sort-btn" onclick="sortHoldings('totalGainPercent')">Return ${sortColumn === 'totalGainPercent' ? (sortAsc ? '▲' : '▼') : ''}</th>
+                                <th class="text-end sort-btn" onclick="sortHoldings('portfolioPercent')">Weight ${sortColumn === 'portfolioPercent' ? (sortAsc ? '▲' : '▼') : ''}</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="holdings-tbody">
+                            ${holdings.map(h => `
+                                <tr class="holding-row ${expandedHoldings.has(h.symbol) ? 'table-active' : ''}" data-symbol="${h.symbol.toLowerCase()}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${assetClassColors[h.assetClass] || '#64748b'};" class="me-2"></div>
+                                            <div>
+                                                <span class="symbol-badge text-primary">${h.symbol}</span>
+                                                <small class="d-block text-muted text-truncate" style="max-width: 120px;">${h.description || ''}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        ${formatCurrency(h.currentPrice || 0)}
+                                        ${h.bid && h.ask ? `<small class="d-block text-muted">${formatCurrency(h.bid)} × ${formatCurrency(h.ask)}</small>` : ''}
+                                    </td>
+                                    <td class="text-end ${h.dayChangePercent >= 0 ? 'gain-positive' : 'gain-negative'}">
+                                        ${h.dayChangePercent >= 0 ? '+' : ''}${h.dayChangePercent?.toFixed(2) || 0}%
+                                        <small class="d-block">${h.dayChange >= 0 ? '+' : ''}${formatCurrency(h.dayChange || 0)}</small>
+                                    </td>
+                                    <td class="text-end">${Number(h.quantity).toLocaleString(undefined, {maximumFractionDigits: 4})}</td>
+                                    <td class="text-end fw-bold">${formatCurrency(h.marketValue)}</td>
+                                    <td class="text-end">${formatCurrency(h.avgCostPerShare || 0)}</td>
+                                    <td class="text-end ${h.totalGain >= 0 ? 'gain-positive' : 'gain-negative'}">
+                                        ${h.totalGain >= 0 ? '+' : ''}${formatCurrency(h.totalGain)}
+                                    </td>
+                                    <td class="text-end ${h.totalGainPercent >= 0 ? 'gain-positive' : 'gain-negative'}">
+                                        ${h.totalGainPercent >= 0 ? '+' : ''}${h.totalGainPercent?.toFixed(2) || 0}%
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-flex align-items-center justify-content-end">
+                                            <div class="progress me-2" style="width: 40px; height: 6px;">
+                                                <div class="progress-bar" style="width: ${Math.min(h.portfolioPercent || 0, 100)}%"></div>
+                                            </div>
+                                            ${(h.portfolioPercent || 0).toFixed(1)}%
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-link btn-sm p-0" onclick="toggleHoldingDetails('${h.symbol}')" title="Details">
+                                            <i class="bi bi-chevron-${expandedHoldings.has(h.symbol) ? 'up' : 'down'}"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                ${expandedHoldings.has(h.symbol) ? renderHoldingDetails(h) : ''}
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderHoldingDetails(h) {
+            return `
+                <tr class="holding-details bg-light">
+                    <td colspan="10">
+                        <div class="p-3">
+                            <div class="row g-4">
+                                <!-- Market Data -->
+                                <div class="col-md-3">
+                                    <h6 class="small text-muted mb-2">Market Data</h6>
+                                    <div class="small">
+                                        <div class="d-flex justify-content-between"><span>52W High:</span><span>${formatCurrency(h.high52Week || 0)}</span></div>
+                                        <div class="d-flex justify-content-between"><span>52W Low:</span><span>${formatCurrency(h.low52Week || 0)}</span></div>
+                                        <div class="d-flex justify-content-between"><span>52W Range:</span>
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress" style="width: 50px; height: 4px;">
+                                                    <div class="progress-bar bg-primary" style="width: ${h.range52WeekPercent || 0}%"></div>
+                                                </div>
+                                                <span class="ms-1">${(h.range52WeekPercent || 0).toFixed(0)}%</span>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-between"><span>Volume:</span><span>${(h.volume || 0).toLocaleString()}</span></div>
+                                        <div class="d-flex justify-content-between"><span>Avg Volume:</span><span>${(h.avgVolume || 0).toLocaleString()}</span></div>
+                                        <div class="d-flex justify-content-between"><span>Vol vs Avg:</span>
+                                            <span class="${(h.volumeVsAvg || 0) > 100 ? 'text-success' : 'text-muted'}">${(h.volumeVsAvg || 0).toFixed(0)}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Fundamentals -->
+                                <div class="col-md-3">
+                                    <h6 class="small text-muted mb-2">Fundamentals</h6>
+                                    <div class="small">
+                                        <div class="d-flex justify-content-between"><span>P/E Ratio:</span><span>${h.peRatio ? h.peRatio.toFixed(2) : '-'}</span></div>
+                                        <div class="d-flex justify-content-between"><span>Market Cap:</span><span>${h.marketCap ? formatLargeNumber(h.marketCap) : '-'}</span></div>
+                                        <div class="d-flex justify-content-between"><span>Beta:</span><span>${h.beta ? h.beta.toFixed(2) : '-'}</span></div>
+                                        <div class="d-flex justify-content-between"><span>Spread:</span><span>${formatCurrency(h.spread || 0)} (${(h.spreadPercent || 0).toFixed(2)}%)</span></div>
+                                    </div>
+                                </div>
+
+                                <!-- Dividends -->
+                                <div class="col-md-3">
+                                    <h6 class="small text-muted mb-2">Dividends</h6>
+                                    <div class="small">
+                                        <div class="d-flex justify-content-between"><span>Dividend:</span><span>${formatCurrency(h.dividend || 0)}</span></div>
+                                        <div class="d-flex justify-content-between"><span>Yield:</span><span>${(h.dividendYield || 0).toFixed(2)}%</span></div>
+                                        <div class="d-flex justify-content-between"><span>Annual Income:</span><span class="text-success">${formatCurrency(h.annualDividendIncome || 0)}</span></div>
+                                        <div class="d-flex justify-content-between"><span>Yield on Cost:</span><span>${(h.yieldOnCost || 0).toFixed(2)}%</span></div>
+                                        <div class="d-flex justify-content-between"><span>Ex-Div Date:</span><span>${h.exDividendDate ? new Date(h.exDividendDate).toLocaleDateString() : '-'}</span></div>
+                                    </div>
+                                </div>
+
+                                <!-- Tax Lots -->
+                                <div class="col-md-3">
+                                    <h6 class="small text-muted mb-2">Tax Lots (${h.lotCount || 0})</h6>
+                                    ${h.lots && h.lots.length > 0 ? `
+                                        <div class="small" style="max-height: 120px; overflow-y: auto;">
+                                            ${h.lots.map(lot => `
+                                                <div class="border-bottom py-1">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>${lot.quantity} shares @ ${formatCurrency(lot.costPerShare)}</span>
+                                                        <span class="${lot.gain >= 0 ? 'text-success' : 'text-danger'}">${lot.gain >= 0 ? '+' : ''}${lot.gainPercent?.toFixed(1)}%</span>
+                                                    </div>
+                                                    <small class="text-muted">${lot.accountName || lot.accountType} • ${lot.termType || 'N/A'}</small>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : '<span class="text-muted small">No lot data available</span>'}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function renderHoldingsCards(holdings) {
+            return `
+                <div class="p-3">
+                    <div class="row g-3">
+                        ${holdings.map(h => `
+                            <div class="col-md-4 col-lg-3">
+                                <div class="card h-100" style="border-left: 4px solid ${assetClassColors[h.assetClass] || '#64748b'};">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <h6 class="mb-0 text-primary">${h.symbol}</h6>
+                                                <small class="text-muted text-truncate d-block" style="max-width: 150px;">${h.description || ''}</small>
+                                            </div>
+                                            <span class="badge ${h.totalGain >= 0 ? 'bg-success' : 'bg-danger'}">${h.totalGainPercent >= 0 ? '+' : ''}${h.totalGainPercent?.toFixed(1)}%</span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <div class="h5 mb-0">${formatCurrency(h.marketValue)}</div>
+                                            <small class="text-muted">${h.quantity} shares @ ${formatCurrency(h.currentPrice)}</small>
+                                        </div>
+                                        <div class="row g-2 small">
+                                            <div class="col-6">
+                                                <span class="text-muted">Day:</span>
+                                                <span class="${h.dayChangePercent >= 0 ? 'text-success' : 'text-danger'}">${h.dayChangePercent >= 0 ? '+' : ''}${h.dayChangePercent?.toFixed(2)}%</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <span class="text-muted">Gain:</span>
+                                                <span class="${h.totalGain >= 0 ? 'text-success' : 'text-danger'}">${formatCurrency(h.totalGain)}</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <span class="text-muted">Weight:</span>
+                                                <span>${h.portfolioPercent?.toFixed(1)}%</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <span class="text-muted">Yield:</span>
+                                                <span>${(h.dividendYield || 0).toFixed(2)}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleHoldingDetails(symbol) {
+            if (expandedHoldings.has(symbol)) {
+                expandedHoldings.delete(symbol);
+            } else {
+                expandedHoldings.add(symbol);
+            }
+            renderDetailedHoldings(holdingsData);
+        }
+
+        function setViewMode(mode) {
+            holdingsViewMode = mode;
+            renderDetailedHoldings(holdingsData);
+        }
+
+        function filterByAssetClass(value) {
+            holdingsFilter.assetClass = value;
+            renderDetailedHoldings(holdingsData);
+        }
+
+        function filterByGainLoss(value) {
+            holdingsFilter.gainLoss = value;
+            renderDetailedHoldings(holdingsData);
+        }
+
+        function filterBySearch(value) {
+            holdingsFilter.search = value;
+            renderDetailedHoldings(holdingsData);
+        }
+
+        function formatLargeNumber(num) {
+            if (num >= 1e12) return (num / 1e12).toFixed(2) + 'T';
+            if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
+            if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
+            if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
+            return num.toFixed(2);
+        }
+
+        function renderHoldings(data) {
+            // Fallback for old data format
+            renderDetailedHoldings(data);
+        }
+
+        function sortHoldings(column) {
+            if (sortColumn === column) {
+                sortAsc = !sortAsc;
+            } else {
+                sortColumn = column;
+                sortAsc = column === 'symbol';
+            }
+            if (holdingsData) renderDetailedHoldings(holdingsData);
+        }
+
+        function filterHoldings(query) {
+            holdingsFilter.search = query;
+            if (holdingsData) renderDetailedHoldings(holdingsData);
+        }
+
+        // Event handlers
+        document.getElementById('oob-submit').onclick = async function() {
+            const pin = document.getElementById('oob-pin').value;
+            const token = window._oobToken;
+            document.getElementById('oob-error').innerText = '';
+            if (!pin || !token) {
+                document.getElementById('oob-error').innerText = 'PIN and token required.';
+                return;
+            }
+            const resp = await fetch('/api/portfolio/access-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ oauthToken: token, pin })
+            });
+            if (resp.ok) {
+                document.getElementById('oob-auth').style.display = 'none';
+                loadPortfolio();
+            } else {
+                let msg = 'Failed to exchange PIN.';
+                try { msg += '\n' + (await resp.text()); } catch {}
+                document.getElementById('oob-error').innerText = msg;
+            }
+        };
+
+        // Load holdings when tab is clicked
+        document.getElementById('holdings-tab').addEventListener('shown.bs.tab', function() {
+            // Always try to load if no data or if current content shows an error/auth message
+            const currentContent = document.getElementById('holdings-info').innerHTML;
+            if (!holdingsData || currentContent.includes('Authentication') || currentContent.includes('Error') || currentContent.includes('Loading')) {
+                loadHoldings();
+            }
+        });
+
+        // Load analytics when tab is clicked
+        document.getElementById('analytics-tab').addEventListener('shown.bs.tab', function() {
+            loadAnalytics();
+        });
+
+        // Load rebalance when tab is clicked
+        document.getElementById('rebalance-tab').addEventListener('shown.bs.tab', function() {
+            loadRebalance();
+        });
+
+        // Load settings when tab is clicked
+        document.getElementById('settings-tab').addEventListener('shown.bs.tab', function() {
+            renderSettings();
+        });
+
+        document.getElementById('signout-btn').onclick = async function() {
+            if (confirm('Sign out and clear E*TRADE session?')) {
+                await fetch('/api/portfolio/sign-out', { method: 'POST' });
+                holdingsData = null;
+                loadPortfolio();
+            }
+        };
+
+        // ========== ANALYTICS FUNCTIONALITY ==========
+        let analyticsData = null;
+        let correlationData = null;
+        let benchmarkData = null;
+
+        async function loadAnalytics() {
+            document.getElementById('analytics-content').innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Analyzing portfolio...</p></div>';
+
+            try {
+                const [healthResp, correlationResp, benchmarkResp] = await Promise.all([
+                    fetch('/api/analytics/portfolio-health'),
+                    fetch('/api/analytics/correlation'),
+                    fetch('/api/analytics/benchmark-comparison')
+                ]);
+
+                if (healthResp.ok) analyticsData = await healthResp.json();
+                if (correlationResp.ok) correlationData = await correlationResp.json();
+                if (benchmarkResp.ok) benchmarkData = await benchmarkResp.json();
+
+                if (analyticsData?.hasData) {
+                    renderAnalytics();
+                } else {
+                    document.getElementById('analytics-content').innerHTML = '<div class="alert alert-info">No holdings data available for analysis. Add positions to your portfolio first.</div>';
+                }
+            } catch (err) {
+                console.error('Analytics error:', err);
+                document.getElementById('analytics-content').innerHTML = '<div class="alert alert-danger">Error loading analytics.</div>';
+            }
+        }
+
+        function renderAnalytics() {
+            const health = analyticsData;
+            const correlation = correlationData;
+            const benchmark = benchmarkData;
+
+            // Health score color
+            const scoreColor = health.healthScore >= 70 ? '#10b981' : health.healthScore >= 50 ? '#f59e0b' : '#ef4444';
+            const scoreLabel = health.healthScore >= 70 ? 'Good' : health.healthScore >= 50 ? 'Fair' : 'Needs Attention';
+
+            let html = `
+            <!-- Portfolio Health Score -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-4">
+                    <div class="chart-card p-4 h-100 text-center">
+                        <h6 class="mb-3">Portfolio Health Score</h6>
+                        <div style="position: relative; width: 150px; height: 150px; margin: 0 auto;">
+                            <canvas id="healthScoreChart"></canvas>
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                <div style="font-size: 2.5rem; font-weight: bold; color: ${scoreColor};">${Math.round(health.healthScore)}</div>
+                                <div class="text-muted small">${scoreLabel}</div>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-start">
+                            <small class="text-muted d-block mb-2">Score factors:</small>
+                            <div class="d-flex justify-content-between small">
+                                <span>Diversification</span>
+                                <span class="${health.concentration.effectiveHoldings >= 5 ? 'text-success' : 'text-warning'}">${health.concentration.effectiveHoldings.toFixed(1)} effective holdings</span>
+                            </div>
+                            <div class="d-flex justify-content-between small">
+                                <span>Top Concentration</span>
+                                <span class="${health.concentration.topHoldingPercent < 25 ? 'text-success' : 'text-warning'}">${health.concentration.topHoldingPercent.toFixed(1)}%</span>
+                            </div>
+                            <div class="d-flex justify-content-between small">
+                                <span>Asset Classes</span>
+                                <span class="${health.sectorExposure.length >= 3 ? 'text-success' : 'text-warning'}">${health.sectorExposure.length}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Benchmark Comparison -->
+                <div class="col-lg-8">
+                    <div class="chart-card p-4 h-100">
+                        <h6 class="mb-3">Today vs Benchmarks</h6>
+                        ${benchmark?.hasData ? `
+                            <div class="row mb-3">
+                                <div class="col-auto">
+                                    <div class="p-3 rounded" style="background: var(--primary-gradient);">
+                                        <div class="text-white small opacity-75">Your Portfolio</div>
+                                        <div class="h4 text-white mb-0">${benchmark.portfolio.dayChangePercent >= 0 ? '+' : ''}${benchmark.portfolio.dayChangePercent.toFixed(2)}%</div>
+                                        <div class="text-white small">${formatCurrency(benchmark.portfolio.dayChange)}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                ${benchmark.benchmarks.map(b => `
+                                    <div class="col-md-3 col-6">
+                                        <div class="p-3 rounded ${b.beating ? 'bg-success bg-opacity-10' : 'bg-danger bg-opacity-10'}">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <strong>${b.symbol}</strong>
+                                                ${b.beating ? '<span class="text-success">✓</span>' : ''}
+                                            </div>
+                                            <div class="small text-muted">${b.name}</div>
+                                            <div class="h5 mb-0 ${b.dayChangePercent >= 0 ? 'text-success' : 'text-danger'}">
+                                                ${b.dayChangePercent >= 0 ? '+' : ''}${b.dayChangePercent.toFixed(2)}%
+                                            </div>
+                                            <div class="small ${b.relativePerformance >= 0 ? 'text-success' : 'text-danger'}">
+                                                ${b.relativePerformance >= 0 ? '▲' : '▼'} ${Math.abs(b.relativePerformance).toFixed(2)}% vs you
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="mt-3 text-center">
+                                <span class="badge ${benchmark.summary.beatingCount > benchmark.summary.totalBenchmarks / 2 ? 'bg-success' : 'bg-secondary'}">
+                                    Beating ${benchmark.summary.beatingCount}/${benchmark.summary.totalBenchmarks} benchmarks today
+                                </span>
+                            </div>
+                        ` : '<p class="text-muted">Benchmark data unavailable</p>'}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Concentration & Correlation Row -->
+            <div class="row g-4 mb-4">
+                <!-- Top Holdings Concentration -->
+                <div class="col-lg-6">
+                    <div class="chart-card p-4 h-100">
+                        <h6 class="mb-3">Position Concentration</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <canvas id="concentrationChart" height="200"></canvas>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        ${health.topHoldings.slice(0, 5).map((h, i) => `
+                                            <tr>
+                                                <td><span class="badge" style="background: ${['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'][i]}">${i + 1}</span></td>
+                                                <td><strong>${h.symbol}</strong></td>
+                                                <td class="text-end">${h.weight.toFixed(1)}%</td>
+                                                <td class="text-end ${h.dayChangePercent >= 0 ? 'text-success' : 'text-danger'}">${h.dayChangePercent >= 0 ? '+' : ''}${h.dayChangePercent.toFixed(2)}%</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                                <div class="small text-muted">
+                                    Top 5: ${health.concentration.top5Percent.toFixed(1)}% of portfolio
+                                </div>
+                            </div>
+                        </div>
+                        ${health.concentration.concentrationWarnings.length > 0 ? `
+                            <div class="alert alert-warning mt-3 mb-0 py-2">
+                                <small>${health.concentration.concentrationWarnings.slice(0, 2).join('<br>')}</small>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Correlation Heatmap -->
+                <div class="col-lg-6">
+                    <div class="chart-card p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Correlation Matrix</h6>
+                            ${correlation?.method ? `
+                                <span class="badge ${correlation.method === 'historical' ? 'bg-success' : 'bg-warning'}">
+                                    ${correlation.method === 'historical' ? `${correlation.dataPoints || 60} days` : 'Today only'}
+                                </span>
+                            ` : ''}
+                        </div>
+                        ${correlation?.hasData ? `
+                            <div class="correlation-matrix mb-3">
+                                <table class="table table-bordered mb-0" style="table-layout: fixed;">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 60px; background: #f8f9fa;"></th>
+                                            ${correlation.symbols.map(s => `
+                                                <th class="text-center p-2" style="background: #f8f9fa; font-size: 0.8rem; font-weight: 600;">
+                                                    ${s}
+                                                </th>
+                                            `).join('')}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${correlation.symbols.map((s, i) => `
+                                            <tr>
+                                                <th class="text-end p-2" style="background: #f8f9fa; font-size: 0.8rem; font-weight: 600;">${s}</th>
+                                                ${correlation.matrix[i].map((val, j) => {
+                                                    // More granular color scale for stock correlations
+                                                    // Most stocks are positively correlated (0.3-0.7 is common)
+                                                    // Negative correlations are rare and valuable
+                                                    let bgColor, textColor, intensity;
+
+                                                    if (i === j) {
+                                                        bgColor = '#e5e7eb';
+                                                        textColor = '#9ca3af';
+                                                    } else if (val >= 0.6) {
+                                                        // High positive - very correlated (bad for diversification)
+                                                        intensity = 0.5 + (val - 0.6) * 1.25; // 0.5 to 1.0
+                                                        bgColor = `rgba(185, 28, 28, ${intensity})`; // Dark red
+                                                        textColor = intensity > 0.7 ? 'white' : '#7f1d1d';
+                                                    } else if (val >= 0.4) {
+                                                        // Moderate-high positive
+                                                        intensity = 0.4 + (val - 0.4) * 1.5; // 0.4 to 0.7
+                                                        bgColor = `rgba(220, 38, 38, ${intensity})`; // Red
+                                                        textColor = intensity > 0.6 ? 'white' : '#991b1b';
+                                                    } else if (val >= 0.2) {
+                                                        // Moderate positive
+                                                        intensity = 0.4 + (val - 0.2) * 1.5; // 0.4 to 0.7
+                                                        bgColor = `rgba(251, 146, 60, ${intensity})`; // Orange
+                                                        textColor = '#9a3412';
+                                                    } else if (val >= 0) {
+                                                        // Low positive - decent diversification
+                                                        intensity = 0.2 + val * 1.0; // 0.2 to 0.4
+                                                        bgColor = `rgba(250, 204, 21, ${intensity})`; // Yellow
+                                                        textColor = '#713f12';
+                                                    } else if (val >= -0.2) {
+                                                        // Near zero / slight negative - good diversification
+                                                        intensity = 0.3 + Math.abs(val) * 1.0; // 0.3 to 0.5
+                                                        bgColor = `rgba(134, 239, 172, ${intensity})`; // Light green
+                                                        textColor = '#166534';
+                                                    } else if (val >= -0.4) {
+                                                        // Moderate negative - great diversification
+                                                        intensity = 0.5 + (Math.abs(val) - 0.2) * 1.25; // 0.5 to 0.75
+                                                        bgColor = `rgba(34, 197, 94, ${intensity})`; // Green
+                                                        textColor = intensity > 0.6 ? 'white' : '#166534';
+                                                    } else {
+                                                        // High negative - excellent diversification (rare!)
+                                                        intensity = 0.6 + (Math.abs(val) - 0.4) * 0.67; // 0.6 to 1.0
+                                                        bgColor = `rgba(22, 163, 74, ${intensity})`; // Dark green
+                                                        textColor = 'white';
+                                                    }
+                                                    return `
+                                                        <td class="text-center p-2" 
+                                                            style="background: ${bgColor}; color: ${textColor}; font-weight: 600; font-size: 0.85rem; cursor: help;"
+                                                            title="${i === j ? 'Self-correlation (always 1.0)' : `${correlation.symbols[i]} ↔ ${correlation.symbols[j]}: ${val.toFixed(2)}`}">
+                                                            ${i === j ? '—' : val.toFixed(2)}
+                                                        </td>`;
+                                                }).join('')}
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Legend - Updated scale for stocks -->
+                            <div class="mb-3">
+                                <div class="d-flex flex-wrap justify-content-center gap-1 mb-2" style="font-size: 0.7rem;">
+                                    <span class="d-flex align-items-center px-2 py-1 rounded" style="background: rgba(185, 28, 28, 0.7);">
+                                        <span style="color: white;">0.6+ ⚠️</span>
+                                    </span>
+                                    <span class="d-flex align-items-center px-2 py-1 rounded" style="background: rgba(220, 38, 38, 0.5);">
+                                        <span style="color: #7f1d1d;">0.4-0.6</span>
+                                    </span>
+                                    <span class="d-flex align-items-center px-2 py-1 rounded" style="background: rgba(251, 146, 60, 0.5);">
+                                        <span style="color: #9a3412;">0.2-0.4</span>
+                                    </span>
+                                    <span class="d-flex align-items-center px-2 py-1 rounded" style="background: rgba(250, 204, 21, 0.4);">
+                                        <span style="color: #713f12;">0-0.2</span>
+                                    </span>
+                                    <span class="d-flex align-items-center px-2 py-1 rounded" style="background: rgba(134, 239, 172, 0.5);">
+                                        <span style="color: #166534;">-0.2-0 ✓</span>
+                                    </span>
+                                    <span class="d-flex align-items-center px-2 py-1 rounded" style="background: rgba(34, 197, 94, 0.6);">
+                                        <span style="color: white;">-0.4 ✓✓</span>
+                                    </span>
+                                    <span class="d-flex align-items-center px-2 py-1 rounded" style="background: rgba(22, 163, 74, 0.8);">
+                                        <span style="color: white;">&lt;-0.4</span>
+                                    </span>
+                                </div>
+                                <div class="text-center text-muted" style="font-size: 0.7rem;">
+                                    High positive = move together (concentrated) → Negative = move opposite (diversified)
+                                </div>
+                            </div>
+
+                            <!-- Info box -->
+                            <div class="alert ${correlation.method === 'historical' ? 'alert-success' : 'alert-warning'} mb-0 py-2">
+                                <small>
+                                    ${correlation.method === 'historical' 
+                                        ? `<strong>Real correlation</strong> calculated from ${correlation.dataPoints || 60} days of daily returns.`
+                                        : `<strong>Estimated only</strong> - based on today's price movements. Historical data unavailable.`
+                                    }
+                                    <br><span class="text-muted">Green = diversifying (holdings move opposite). Red = concentrated (move together).</span>
+                                </small>
+                            </div>
+                        ` : '<p class="text-muted">Need at least 2 holdings for correlation analysis</p>'}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sector Exposure -->
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="chart-card p-4">
+                        <h6 class="mb-3">Asset Class Exposure</h6>
+                        <div class="row">
+                            ${health.sectorExposure.map(s => `
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>${s.sector}</span>
+                                        <strong>${s.percent.toFixed(1)}%</strong>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar" style="width: ${s.percent}%; background: ${assetClassColors[s.sector] || '#64748b'};"></div>
+                                    </div>
+                                    <small class="text-muted">${formatCurrency(s.value)} • ${s.holdingsCount} holding${s.holdingsCount > 1 ? 's' : ''}</small>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+
+            document.getElementById('analytics-content').innerHTML = html;
+
+            // Draw charts
+            setTimeout(() => {
+                // Health score gauge
+                new Chart(document.getElementById('healthScoreChart').getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        datasets: [{
+                            data: [health.healthScore, 100 - health.healthScore],
+                            backgroundColor: [scoreColor, '#e5e7eb'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        cutout: '80%',
+                        rotation: -90,
+                        circumference: 180,
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } }
+                    }
+                });
+
+                // Concentration pie chart
+                if (health.topHoldings.length > 0) {
+                    const top5 = health.topHoldings.slice(0, 5);
+                    const otherWeight = 100 - top5.reduce((sum, h) => sum + h.weight, 0);
+
+                    new Chart(document.getElementById('concentrationChart').getContext('2d'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: [...top5.map(h => h.symbol), otherWeight > 0 ? 'Other' : null].filter(Boolean),
+                            datasets: [{
+                                data: [...top5.map(h => h.weight), otherWeight > 0 ? otherWeight : null].filter(v => v !== null),
+                                backgroundColor: ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#64748b'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            cutout: '50%',
+                            plugins: {
+                                legend: { display: false }
+                            }
+                        }
+                    });
+                }
+            }, 100);
+        }
+
+        // ========== REBALANCE FUNCTIONALITY ==========
+        let rebalanceModels = [];
+        let selectedModel = null;
+        let currentAnalysis = null;
+        let calculatedTrades = null;
+
+        const assetClassColors = {
+            'USStock': '#6366f1',
+            'InternationalStock': '#8b5cf6',
+            'Bond': '#10b981',
+            'Cash': '#f59e0b',
+            'Commodity': '#ec4899',
+            'RealEstate': '#06b6d4',
+            'Crypto': '#f97316',
+            'Other': '#64748b'
+        };
+
+        const assetClassNames = {
+            'USStock': 'US Stocks',
+            'InternationalStock': 'Int\'l Stocks',
+            'Bond': 'Bonds',
+            'Cash': 'Cash',
+            'Commodity': 'Commodities',
+            'RealEstate': 'Real Estate',
+            'Crypto': 'Crypto',
+            'Other': 'Other'
+        };
+
+        // Test mode cash override
+        let testCashAmount = null;
+
+        async function loadRebalance() {
+            document.getElementById('rebalance-content').innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Loading...</p></div>';
+
+            try {
+                // Build analyze URL with optional test cash
+                let analyzeUrl = '/api/rebalance/analyze';
+                if (testCashAmount && testCashAmount > 0) {
+                    analyzeUrl += `?testCash=${testCashAmount}`;
+                }
+
+                // Load models and analysis in parallel
+                const [modelsResp, analysisResp] = await Promise.all([
+                    fetch('/api/rebalance/models'),
+                    fetch(analyzeUrl)
+                ]);
+
+                if (modelsResp.ok) {
+                    rebalanceModels = await modelsResp.json();
+                }
+
+                if (analysisResp.ok) {
+                    currentAnalysis = await analysisResp.json();
+                    renderRebalance();
+                } else if (analysisResp.status === 401) {
+                    document.getElementById('rebalance-content').innerHTML = '<div class="alert alert-warning">Please authenticate first via the Dashboard tab.</div>';
+                } else {
+                    document.getElementById('rebalance-content').innerHTML = '<div class="alert alert-danger">Failed to load portfolio analysis.</div>';
+                }
+            } catch (err) {
+                document.getElementById('rebalance-content').innerHTML = '<div class="alert alert-danger">Error loading rebalance data.</div>';
+            }
+        }
+
+        function setTestCash(amount) {
+            testCashAmount = amount;
+            loadRebalance();
+        }
+
+        function clearTestCash() {
+            testCashAmount = null;
+            loadRebalance();
+        }
+
+        // Rebalance mode: 'rebalance' or 'builder'
+        let rebalanceMode = 'rebalance';
+
+        async function renderRebalance() {
+            const analysis = currentAnalysis;
+            if (!analysis) return;
+
+            // If user has no holdings, force builder mode
+            if (analysis.holdingsCount === 0 || analysis.invested === 0) {
+                rebalanceMode = 'builder';
+            }
+
+            // Show Portfolio Builder mode
+            if (rebalanceMode === 'builder') {
+                await renderPortfolioBuilder(analysis);
+                return;
+            }
+
+            // Show regular rebalance mode
+            let html = `
+            <!-- Mode Toggle -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="btn-group">
+                    <button class="btn ${rebalanceMode === 'rebalance' ? 'btn-primary' : 'btn-outline-primary'}" onclick="switchRebalanceMode('rebalance')">
+                        Rebalance Portfolio
+                    </button>
+                    <button class="btn ${rebalanceMode === 'builder' ? 'btn-primary' : 'btn-outline-primary'}" onclick="switchRebalanceMode('builder')">
+                        Build New Positions
+                    </button>
+                </div>
+                ${analysis.cash > 100 ? `<span class="badge bg-success fs-6">${formatCurrency(analysis.cash)} cash available</span>` : ''}
+            </div>
+
+            <!-- Current Allocation Summary -->
+            <div class="summary-card p-4 mb-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-4 mb-3 mb-lg-0">
+                        <div class="label mb-1">Portfolio Value</div>
+                        <h2 class="value mb-0">${formatCurrency(analysis.totalValue)}</h2>
+                        <small class="opacity-75">${analysis.holdingsCount} positions</small>
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="label mb-2">Current Allocation by Asset Class</div>
+                        <div class="allocation-bar mb-2">
+                            ${analysis.byAssetClass.map(a => `
+                                <div class="allocation-segment" style="width: ${a.currentPercent}%; background: ${assetClassColors[a.assetClass] || '#64748b'};" 
+                                     title="${assetClassNames[a.assetClass] || a.assetClass}: ${a.currentPercent.toFixed(1)}%"></div>
+                            `).join('')}
+                        </div>
+                        <div class="d-flex flex-wrap gap-3">
+                            ${analysis.byAssetClass.map(a => `
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 12px; height: 12px; border-radius: 3px; background: ${assetClassColors[a.assetClass] || '#64748b'};" class="me-2"></div>
+                                    <small class="text-white">${assetClassNames[a.assetClass] || a.assetClass}: ${a.currentPercent.toFixed(1)}%</small>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Selection -->
+            <h6 class="mb-3">Select Rebalancing Strategy</h6>
+            <div class="row g-3 mb-4">
+                ${rebalanceModels.map((model, idx) => `
+                    <div class="col-md-4">
+                        <div class="rebalance-card model-card p-3 h-100 ${selectedModel === idx ? 'selected' : ''}" onclick="selectModel(${idx})">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">${model.name}</h6>
+                                ${selectedModel === idx ? '<i class="bi bi-check-circle-fill text-primary"></i>' : ''}
+                            </div>
+                            <p class="small text-muted mb-3">${model.description}</p>
+                            <div class="allocation-bar" style="height: 12px;">
+                                ${model.allocations.map(a => `
+                                    <div class="allocation-segment" style="width: ${a.targetPercent}%; background: ${assetClassColors[a.assetClass] || '#64748b'};"></div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+                <div class="col-md-4">
+                    <div class="rebalance-card model-card p-3 h-100 ${selectedModel === 'custom' ? 'selected' : ''}" onclick="selectModel('custom')">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">Custom</h6>
+                            ${selectedModel === 'custom' ? '<i class="bi bi-check-circle-fill text-primary"></i>' : ''}
+                        </div>
+                        <p class="small text-muted mb-3">Define your own target allocation for each holding</p>
+                        <div class="text-center text-muted small">
+                            Custom allocation
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rebalance Options -->
+            <div class="rebalance-card p-3 mb-4">
+                <h6 class="mb-3">Rebalance Options</h6>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label small">Minimum Trade Size</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" id="minTradeValue" class="form-control" value="50">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Tolerance %</label>
+                        <div class="input-group">
+                            <input type="number" id="tolerancePercent" class="form-control" value="2" step="0.5">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Allow Selling</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" id="allowSelling" checked>
+                            <label class="form-check-label" for="allowSelling">Sell overweight positions</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button class="btn btn-primary w-100" onclick="calculateRebalance()" ${selectedModel === null ? 'disabled' : ''}>
+                            Calculate Trades
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trade Preview (shown after calculation) -->
+            <div id="trade-preview"></div>
+            `;
+
+            document.getElementById('rebalance-content').innerHTML = html;
+        }
+
+        function switchRebalanceMode(mode) {
+            rebalanceMode = mode;
+            selectedModel = null;
+            builderSelectedModel = null;
+            portfolioBuildItems = [];
+            buildResult = null;
+            calculatedTrades = null;
+            renderRebalance();
+        }
+
+        function selectModel(idx) {
+            selectedModel = idx;
+            calculatedTrades = null;
+            renderRebalance();
+        }
+
+        async function calculateRebalance() {
+            if (selectedModel === null) return;
+
+            const model = selectedModel === 'custom' 
+                ? { name: 'Custom', riskProfile: 3, rebalanceByAssetClass: false, allocations: [] }
+                : rebalanceModels[selectedModel];
+
+            const request = {
+                model: model,
+                sellToRebalance: document.getElementById('allowSelling').checked,
+                minimumTradeValue: parseFloat(document.getElementById('minTradeValue').value) || 50,
+                tolerancePercent: parseFloat(document.getElementById('tolerancePercent').value) || 2
+            };
+
+            document.getElementById('trade-preview').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="mt-2">Calculating...</p></div>';
+
+            try {
+                const resp = await fetch('/api/rebalance/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(request)
+                });
+
+                if (resp.ok) {
+                    calculatedTrades = await resp.json();
+                    renderTradePreview();
+                } else {
+                    document.getElementById('trade-preview').innerHTML = '<div class="alert alert-danger">Failed to calculate rebalance.</div>';
+                }
+            } catch (err) {
+                document.getElementById('trade-preview').innerHTML = '<div class="alert alert-danger">Error calculating rebalance.</div>';
+            }
+        }
+
+        function renderTradePreview() {
+            if (!calculatedTrades) return;
+
+            const trades = calculatedTrades;
+
+            let html = `
+            <div class="rebalance-card p-3 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Required Trades</h6>
+                    <div>
+                        <span class="badge bg-success me-2">Buy: ${formatCurrency(trades.estimatedTotalBuys)}</span>
+                        <span class="badge bg-danger">Sell: ${formatCurrency(trades.estimatedTotalSells)}</span>
+                    </div>
+                </div>
+
+                ${trades.warnings.length > 0 ? `
+                    <div class="alert alert-warning py-2 mb-3">
+                        <small>${trades.warnings.join('<br>')}</small>
+                    </div>
+                ` : ''}
+
+                ${trades.requiredTrades.length === 0 ? `
+                    <div class="alert alert-success mb-0">
+                        Your portfolio is already balanced within the specified tolerance!
+                    </div>
+                ` : `
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Action</th>
+                                    <th class="text-end">Shares</th>
+                                    <th class="text-end">Est. Price</th>
+                                    <th class="text-end">Est. Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${trades.requiredTrades.map(t => `
+                                    <tr class="${t.action === 'BUY' ? 'trade-buy' : 'trade-sell'}">
+                                        <td><strong>${t.symbol}</strong><br><small class="text-muted">${t.description || ''}</small></td>
+                                        <td><span class="badge ${t.action === 'BUY' ? 'bg-success' : 'bg-danger'}">${t.action}</span></td>
+                                        <td class="text-end">${t.quantity}</td>
+                                        <td class="text-end">${formatCurrency(t.estimatedPrice)}</td>
+                                        <td class="text-end">${formatCurrency(t.estimatedValue)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-3 d-flex gap-2">
+                        <button class="btn btn-outline-primary" onclick="previewTrades()">
+                            Preview Orders
+                        </button>
+                        <button class="btn btn-success" onclick="executeTrades()">
+                            Execute All Trades
+                        </button>
+                    </div>
+                `}
+            </div>
+
+            <!-- Allocation Comparison -->
+            <div class="rebalance-card p-3">
+                <h6 class="mb-3">Allocation Comparison</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="small text-muted">Current</h6>
+                        ${trades.currentAllocations.map(a => `
+                            <div class="d-flex align-items-center mb-2">
+                                <div style="width: 100px;" class="small">${assetClassNames[a.assetClass] || a.symbol || 'Unknown'}</div>
+                                <div class="flex-grow-1 mx-2">
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar" style="width: ${a.currentPercent}%; background: ${assetClassColors[a.assetClass] || '#6366f1'};"></div>
+                                    </div>
+                                </div>
+                                <div style="width: 50px;" class="small text-end">${a.currentPercent.toFixed(1)}%</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="small text-muted">Target</h6>
+                        ${trades.targetAllocations.map(a => `
+                            <div class="d-flex align-items-center mb-2">
+                                <div style="width: 100px;" class="small">${assetClassNames[a.assetClass] || a.symbol || 'Unknown'}</div>
+                                <div class="flex-grow-1 mx-2">
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar" style="width: ${a.targetPercent}%; background: ${assetClassColors[a.assetClass] || '#6366f1'};"></div>
+                                    </div>
+                                </div>
+                                <div style="width: 50px;" class="small text-end">${a.targetPercent.toFixed(1)}%</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+            `;
+
+            document.getElementById('trade-preview').innerHTML = html;
+        }
+
+        async function previewTrades() {
+            if (!calculatedTrades || calculatedTrades.requiredTrades.length === 0) return;
+
+            if (!confirm('Preview all trades with E*TRADE?')) return;
+
+            try {
+                const resp = await fetch('/api/rebalance/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        trades: calculatedTrades.requiredTrades,
+                        previewOnly: true
+                    })
+                });
+
+                const result = await resp.json();
+                alert(`Preview complete!\n\nSuccess: ${result.successCount}\nFailed: ${result.failedCount}\n\nCheck logs for details.`);
+            } catch (err) {
+                alert('Error previewing trades: ' + err.message);
+            }
+        }
+
+        async function executeTrades() {
+            if (!calculatedTrades || calculatedTrades.requiredTrades.length === 0) return;
+
+            if (!confirm('⚠️ EXECUTE ALL TRADES?\n\nThis will place REAL orders with E*TRADE!\n\nBuys: ' + formatCurrency(calculatedTrades.estimatedTotalBuys) + '\nSells: ' + formatCurrency(calculatedTrades.estimatedTotalSells) + '\n\nAre you sure?')) return;
+
+            try {
+                const resp = await fetch('/api/rebalance/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        trades: calculatedTrades.requiredTrades,
+                        previewOnly: false
+                    })
+                });
+
+                const result = await resp.json();
+
+                let message = `Trade Execution Results:\n\n`;
+                message += `Success: ${result.successCount}\n`;
+                message += `Failed: ${result.failedCount}\n\n`;
+
+                result.results.forEach(r => {
+                    message += `${r.symbol} ${r.action}: ${r.success ? 'OK' : 'FAILED'} ${r.errorMessage || ''}\n`;
+                });
+
+                alert(message);
+
+                // Refresh data
+                loadRebalance();
+                loadPortfolio();
+            } catch (err) {
+                alert('Error executing trades: ' + err.message);
+            }
+        }
+
+        // ========== PORTFOLIO BUILDER ==========
+        let suggestedETFs = null;
+        let builderSelectedModel = null;
+        let portfolioBuildItems = [];
+        let buildResult = null;
+
+        async function renderPortfolioBuilder(analysis) {
+            // First load ETFs if not already loaded
+            if (!suggestedETFs) {
+                document.getElementById('rebalance-content').innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Loading ETF prices...</p></div>';
+                await loadSuggestedETFs();
+            }
+
+            const marketStatus = getMarketStatus();
+            const savedPortfolios = getSavedPortfolios();
+            const hasHoldings = analysis.holdingsCount > 0 && analysis.invested > 0;
+
+            let html = `
+            <!-- Mode Toggle -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="btn-group">
+                    <button class="btn ${rebalanceMode === 'rebalance' ? 'btn-primary' : 'btn-outline-primary'}" onclick="switchRebalanceMode('rebalance')" ${!hasHoldings ? 'disabled' : ''}>
+                        Rebalance Portfolio
+                    </button>
+                    <button class="btn ${rebalanceMode === 'builder' ? 'btn-primary' : 'btn-outline-primary'}" onclick="switchRebalanceMode('builder')">
+                        Build New Positions
+                    </button>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="showSavePortfolioModal()">
+                            <i class="bi bi-save me-1"></i>Save
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-folder2-open me-1"></i>Load
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            ${savedPortfolios.length === 0 ? `
+                                <li><span class="dropdown-item text-muted">No saved portfolios</span></li>
+                            ` : savedPortfolios.map(p => `
+                                <li>
+                                    <a class="dropdown-item d-flex justify-content-between align-items-center" href="#" onclick="loadAndRenderPortfolio(${p.id}); return false;">
+                                        <span>
+                                            <strong>${p.name}</strong><br>
+                                            <small class="text-muted">${p.items.length} items • ${new Date(p.savedAt).toLocaleDateString()}</small>
+                                        </span>
+                                        <button class="btn btn-link btn-sm text-danger p-0 ms-2" onclick="event.stopPropagation(); deleteAndRefresh(${p.id});">
+                                            ×
+                                        </button>
+                                    </a>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Mode Banner -->
+            ${analysis.isTestMode ? `
+            <div class="alert alert-warning d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <strong>⚠️ TEST MODE</strong> - Using simulated cash: <strong>${formatCurrency(analysis.cash)}</strong> 
+                    (actual: ${formatCurrency(analysis.actualCash)})
+                </div>
+                <button class="btn btn-sm btn-outline-warning" onclick="clearTestCash()">Exit Test Mode</button>
+            </div>
+            ` : ''}
+
+            <!-- Test Cash Controls (Development Mode) -->
+            <div class="card mb-3 border-info">
+                <div class="card-body py-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="text-info"><i class="bi bi-bug"></i> <strong>Dev Tools:</strong></span>
+                        <div class="input-group" style="max-width: 200px;">
+                            <span class="input-group-text">$</span>
+                            <input type="number" id="testCashInput" class="form-control form-control-sm" 
+                                   placeholder="Test cash" value="${testCashAmount || ''}" min="100" step="100">
+                        </div>
+                        <button class="btn btn-info btn-sm" onclick="setTestCash(parseFloat(document.getElementById('testCashInput').value) || 0)">
+                            Simulate Cash
+                        </button>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary" onclick="setTestCash(1000)">$1K</button>
+                            <button class="btn btn-outline-secondary" onclick="setTestCash(5000)">$5K</button>
+                            <button class="btn btn-outline-secondary" onclick="setTestCash(10000)">$10K</button>
+                            <button class="btn btn-outline-secondary" onclick="setTestCash(50000)">$50K</button>
+                            <button class="btn btn-outline-secondary" onclick="setTestCash(100000)">$100K</button>
+                        </div>
+                        ${testCashAmount ? `<button class="btn btn-outline-danger btn-sm" onclick="clearTestCash()">Reset</button>` : ''}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Summary Header -->
+            <div class="summary-card p-4 mb-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-4 mb-3 mb-lg-0">
+                        <div class="label mb-1">Portfolio Value</div>
+                        <h2 class="value mb-0">${formatCurrency(analysis.totalValue)}</h2>
+                        <small class="opacity-75">${analysis.holdingsCount} positions • ${formatCurrency(analysis.cash)} cash available</small>
+                    </div>
+                    <div class="col-lg-8">
+                        ${analysis.byAssetClass && analysis.byAssetClass.length > 0 ? `
+                        <div class="label mb-2">Current Allocation by Asset Class</div>
+                        <div class="allocation-bar mb-2">
+                            ${analysis.byAssetClass.map(a => `
+                                <div class="allocation-segment" style="width: ${a.currentPercent}%; background: ${assetClassColors[a.assetClass] || '#64748b'};" 
+                                     title="${assetClassNames[a.assetClass] || a.assetClass}: ${a.currentPercent.toFixed(1)}%"></div>
+                            `).join('')}
+                        </div>
+                        <div class="d-flex flex-wrap gap-3">
+                            ${analysis.byAssetClass.map(a => `
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 12px; height: 12px; border-radius: 3px; background: ${assetClassColors[a.assetClass] || '#64748b'};" class="me-2"></div>
+                                    <small class="text-white">${assetClassNames[a.assetClass] || a.assetClass}: ${a.currentPercent.toFixed(1)}%</small>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ` : `
+                        <div class="label mb-2">Build Your Portfolio</div>
+                        <p class="mb-0 opacity-75">Select a strategy below or add individual stocks/ETFs to get started.</p>
+                        `}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strategy Selection -->
+            <h6 class="mb-3">Step 1: Choose Your Investment Strategy</h6>
+            <div class="row g-3 mb-4">
+                ${rebalanceModels.map((model, idx) => `
+                    <div class="col-md-4">
+                        <div class="rebalance-card model-card p-3 h-100 ${builderSelectedModel === idx ? 'selected' : ''}" onclick="selectBuilderModel(${idx})">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">${model.name}</h6>
+                                ${builderSelectedModel === idx ? '<i class="bi bi-check-circle-fill text-primary"></i>' : ''}
+                            </div>
+                            <p class="small text-muted mb-3">${model.description}</p>
+                            <div class="allocation-bar" style="height: 12px;">
+                                ${model.allocations.map(a => `
+                                    <div class="allocation-segment" style="width: ${a.targetPercent}%; background: ${assetClassColors[a.assetClass] || '#64748b'};"></div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <!-- Add Custom Stock/ETF -->
+            <div class="rebalance-card p-3 mb-4">
+                <h6 class="mb-3">Or Add Individual Stocks/ETFs</h6>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small">Symbol</label>
+                        <input type="text" id="addSymbol" class="form-control" placeholder="e.g., AAPL, MSFT" style="text-transform: uppercase;">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Add By</label>
+                        <select id="addByType" class="form-select" onchange="toggleAddByType()">
+                            <option value="amount">Dollar Amount</option>
+                            <option value="shares">Shares</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2" id="addAmountGroup">
+                        <label class="form-label small">Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" id="addAmount" class="form-control" placeholder="100" value="100" min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="col-md-2" id="addSharesGroup" style="display: none;">
+                        <label class="form-label small">Shares</label>
+                        <input type="number" id="addShares" class="form-control" placeholder="10" value="1" min="1" step="1">
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" id="autoRebalance" checked>
+                            <label class="form-check-label small" for="autoRebalance">Auto-rebalance</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-primary me-1" onclick="addCustomStock()">
+                            Add
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="getQuote()">
+                            Quote
+                        </button>
+                    </div>
+                </div>
+                <div id="quote-result" class="mt-2"></div>
+                <small class="text-muted mt-1 d-block">Auto-rebalance proportionally reduces existing allocations to make room for new additions while preserving your specified share counts.</small>
+            </div>
+
+            <!-- Selected Investments -->
+            <div id="etf-selection">
+                ${portfolioBuildItems.length > 0 ? '' : '<div class="alert alert-info">Select a strategy above or add stocks manually.</div>'}
+            </div>
+
+            <!-- Build Preview -->
+            <div id="build-preview"></div>
+            `;
+
+            document.getElementById('rebalance-content').innerHTML = html;
+
+            // If we have items, render them
+            if (portfolioBuildItems.length > 0) {
+                renderETFSelection();
+            }
+        }
+
+        async function loadSuggestedETFs() {
+            try {
+                console.log('Fetching suggested ETFs...');
+                const resp = await fetch('/api/market/suggested-etfs');
+                console.log('ETF response status:', resp.status);
+                if (resp.ok) {
+                    suggestedETFs = await resp.json();
+                    console.log('Loaded suggested ETFs:', suggestedETFs);
+                } else {
+                    console.error('ETF API returned error:', resp.status);
+                    const el = document.getElementById('etf-selection');
+                    if (el) el.innerHTML = '<div class="alert alert-warning">Failed to load ETF prices (status: ' + resp.status + '). You can still proceed manually.</div>';
+                }
+            } catch (err) {
+                console.error('Failed to load suggested ETFs:', err);
+                const el = document.getElementById('etf-selection');
+                if (el) el.innerHTML = '<div class="alert alert-warning">Failed to load ETF prices. Check console for details.</div>';
+            }
+        }
+
+        function selectBuilderModel(idx) {
+            console.log('selectBuilderModel called with idx:', idx);
+            console.log('Current suggestedETFs:', suggestedETFs);
+
+            // Toggle selection - click again to deselect
+            if (builderSelectedModel === idx) {
+                builderSelectedModel = null;
+                portfolioBuildItems = [];
+                buildResult = null;
+                const etfEl = document.getElementById('etf-selection');
+                if (etfEl) etfEl.innerHTML = '<div class="alert alert-info">Select a strategy above or add stocks manually.</div>';
+                const previewEl = document.getElementById('build-preview');
+                if (previewEl) previewEl.innerHTML = '';
+                // Update card visual state
+                updateStrategyCards();
+                return;
+            }
+
+            builderSelectedModel = idx;
+            const model = rebalanceModels[idx];
+            buildResult = null; // Clear any previous build
+            console.log('Selected model:', model);
+
+            // Create portfolio items based on model allocations
+            portfolioBuildItems = [];
+
+            if (suggestedETFs && Object.keys(suggestedETFs).length > 0) {
+                console.log('Processing allocations:', model.allocations);
+                model.allocations.forEach(alloc => {
+                    if (alloc.assetClass === 'Cash') return;
+
+                    const assetClassKey = alloc.assetClass;
+                    const etfsForClass = suggestedETFs[assetClassKey];
+                    console.log(`Asset class ${assetClassKey}:`, etfsForClass);
+
+                    if (etfsForClass && etfsForClass.length > 0) {
+                        // Pick the first (recommended) ETF for this asset class
+                        const etf = etfsForClass[0];
+                        portfolioBuildItems.push({
+                            symbol: etf.symbol,
+                            name: etf.name,
+                            assetClass: assetClassKey,
+                            targetPercent: alloc.targetPercent,
+                            currentPrice: etf.currentPrice,
+                            changePercent: etf.changePercent
+                        });
+                    }
+                });
+                console.log('Built portfolioBuildItems:', portfolioBuildItems);
+            } else {
+                // ETFs not loaded yet - show message
+                console.log('suggestedETFs not loaded!');
+                document.getElementById('etf-selection').innerHTML = '<div class="alert alert-warning">ETF prices are still loading. Please wait...</div>';
+                return;
+            }
+
+            // Update the strategy cards to show selection
+            updateStrategyCards();
+            renderETFSelection();
+        }
+
+        function updateStrategyCards() {
+            // Update the visual selection state of strategy cards
+            document.querySelectorAll('.model-card').forEach((card, idx) => {
+                if (idx === builderSelectedModel) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
+            });
+        }
+
+        // Get a quote for a single symbol
+        async function getQuote() {
+            const symbol = document.getElementById('addSymbol').value.toUpperCase().trim();
+            if (!symbol) {
+                alert('Please enter a symbol');
+                return;
+            }
+
+            document.getElementById('quote-result').innerHTML = '<span class="text-muted"><i class="bi bi-hourglass-split"></i> Getting quote...</span>';
+
+            try {
+                const resp = await fetch(`/api/market/quote/${symbol}`);
+                if (resp.ok) {
+                    const quotes = await resp.json();
+                    if (quotes.length > 0) {
+                        const q = quotes[0];
+                        const changeClass = q.changePercent >= 0 ? 'text-success' : 'text-danger';
+                        const changeSign = q.changePercent >= 0 ? '+' : '';
+                        document.getElementById('quote-result').innerHTML = `
+                            <div class="alert alert-light py-2">
+                                <strong>${q.symbol}</strong> - ${q.description || 'N/A'}<br>
+                                <span class="h5">${formatCurrency(q.lastPrice)}</span>
+                                <span class="${changeClass}">${changeSign}${q.changePercent?.toFixed(2) || 0}%</span>
+                                <small class="text-muted ms-2">Vol: ${(q.volume || 0).toLocaleString()}</small>
+                            </div>
+                        `;
+                    } else {
+                        document.getElementById('quote-result').innerHTML = '<span class="text-danger">Symbol not found</span>';
+                    }
+                } else {
+                    document.getElementById('quote-result').innerHTML = '<span class="text-danger">Failed to get quote</span>';
+                }
+            } catch (err) {
+                document.getElementById('quote-result').innerHTML = '<span class="text-danger">Error getting quote</span>';
+            }
+        }
+
+        // Calculate current total allocation percentage
+        function getTotalAllocationPercent() {
+            return portfolioBuildItems.reduce((sum, item) => sum + item.targetPercent, 0);
+        }
+
+        // Toggle between amount and shares input
+        function toggleAddByType() {
+            const addByType = document.getElementById('addByType').value;
+            document.getElementById('addAmountGroup').style.display = addByType === 'amount' ? '' : 'none';
+            document.getElementById('addSharesGroup').style.display = addByType === 'shares' ? '' : 'none';
+        }
+
+        // Add a custom stock to the portfolio
+        async function addCustomStock() {
+            const symbol = document.getElementById('addSymbol').value.toUpperCase().trim();
+            const addByType = document.getElementById('addByType').value;
+            const autoRebalance = document.getElementById('autoRebalance').checked;
+
+            if (!symbol) {
+                alert('Please enter a symbol');
+                return;
+            }
+
+            // Check if already in list
+            if (portfolioBuildItems.some(i => i.symbol === symbol)) {
+                alert(`${symbol} is already in your list`);
+                return;
+            }
+
+            document.getElementById('quote-result').innerHTML = '<span class="text-muted"><i class="bi bi-hourglass-split"></i> Fetching quote...</span>';
+
+            try {
+                const resp = await fetch(`/api/market/quote/${symbol}`);
+                if (!resp.ok) {
+                    document.getElementById('quote-result').innerHTML = '<span class="text-danger">Failed to get quote</span>';
+                    return;
+                }
+
+                const quotes = await resp.json();
+                if (quotes.length === 0) {
+                    document.getElementById('quote-result').innerHTML = '<span class="text-danger">Symbol not found</span>';
+                    return;
+                }
+
+                const q = quotes[0];
+                let requestedAmount;
+                let requestedShares = null;
+
+                if (addByType === 'shares') {
+                    requestedShares = parseInt(document.getElementById('addShares').value) || 1;
+                    if (requestedShares <= 0) {
+                        document.getElementById('quote-result').innerHTML = '<span class="text-danger">Shares must be at least 1</span>';
+                        return;
+                    }
+                    requestedAmount = requestedShares * q.lastPrice;
+                } else {
+                    requestedAmount = parseFloat(document.getElementById('addAmount').value) || 100;
+                    if (requestedAmount <= 0) {
+                        document.getElementById('quote-result').innerHTML = '<span class="text-danger">Amount must be greater than 0</span>';
+                        return;
+                    }
+                }
+
+                // Validate amount doesn't exceed available cash
+                if (requestedAmount > currentAnalysis.cash) {
+                    document.getElementById('quote-result').innerHTML = `<span class="text-danger">Amount (${formatCurrency(requestedAmount)}) exceeds available cash (${formatCurrency(currentAnalysis.cash)})</span>`;
+                    return;
+                }
+
+                // Calculate percentage based on amount vs total cash
+                const targetPercent = (requestedAmount / currentAnalysis.cash) * 100;
+
+                const newItem = {
+                    symbol: q.symbol,
+                    name: q.description || q.symbol,
+                    assetClass: 'Custom',
+                    targetPercent: targetPercent,
+                    currentPrice: q.lastPrice,
+                    changePercent: q.changePercent,
+                    isCustom: true,
+                    fixedShares: requestedShares // Store fixed shares if specified
+                };
+
+                const currentTotal = getTotalAllocationPercent();
+
+                if (currentTotal + targetPercent > 100) {
+                    if (autoRebalance) {
+                        // Rebalance: scale down existing items to make room
+                        const availableForExisting = 100 - targetPercent;
+                        const scaleFactor = currentTotal > 0 ? availableForExisting / currentTotal : 1;
+
+                        portfolioBuildItems.forEach(item => {
+                            item.targetPercent = item.targetPercent * scaleFactor;
+                            // Clear fixed shares when rebalancing (they'll be recalculated)
+                            if (!item.fixedShares) {
+                                item.fixedShares = null;
+                            }
+                        });
+
+                        portfolioBuildItems.push(newItem);
+                        document.getElementById('quote-result').innerHTML = `<span class="text-success">✓ Added ${symbol} - existing allocations adjusted</span>`;
+                    } else {
+                        const maxAmount = ((100 - currentTotal) / 100) * currentAnalysis.cash;
+                        document.getElementById('quote-result').innerHTML = `<span class="text-danger">Adding this would exceed available cash. Max: ${formatCurrency(maxAmount)}. Enable auto-rebalance to adjust allocations.</span>`;
+                        return;
+                    }
+                } else {
+                    portfolioBuildItems.push(newItem);
+                    document.getElementById('quote-result').innerHTML = `<span class="text-success">✓ Added ${symbol}</span>`;
+                }
+
+                document.getElementById('addSymbol').value = '';
+                renderETFSelection();
+            } catch (err) {
+                document.getElementById('quote-result').innerHTML = '<span class="text-danger">Error adding stock</span>';
+            }
+        }
+
+        // Remove an item from the portfolio build list and rebalance remaining items
+        function removeFromBuild(idx) {
+            const removedItem = portfolioBuildItems[idx];
+            const removedPercent = removedItem.targetPercent;
+
+            portfolioBuildItems.splice(idx, 1);
+
+            if (portfolioBuildItems.length === 0) {
+                builderSelectedModel = null;
+                updateStrategyCards();
+                document.getElementById('etf-selection').innerHTML = '<div class="alert alert-info">Select a strategy above or add stocks manually.</div>';
+                document.getElementById('build-preview').innerHTML = '';
+            } else {
+                // Rebalance: distribute the removed percentage proportionally among remaining items
+                const currentTotal = getTotalAllocationPercent();
+                if (currentTotal > 0) {
+                    // Scale up remaining items to fill the gap (up to 95% to leave room for cash)
+                    const targetTotal = Math.min(95, currentTotal + removedPercent);
+                    const scaleFactor = targetTotal / currentTotal;
+
+                    portfolioBuildItems.forEach(item => {
+                        // Only scale items without fixed shares
+                        if (!item.fixedShares) {
+                            item.targetPercent = item.targetPercent * scaleFactor;
+                        }
+                    });
+                }
+                renderETFSelection();
+            }
+        }
+
+        function renderETFSelection() {
+            if (portfolioBuildItems.length === 0) return;
+
+            const analysis = currentAnalysis;
+            const cashToInvest = analysis.cash * 0.95; // Keep 5% reserve
+
+
+            let html = `
+            <h6 class="mb-3">Step 2: Select ETFs for Each Asset Class</h6>
+            <div class="rebalance-card p-3 mb-4">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Asset Class</th>
+                                <th>ETF</th>
+                                <th class="text-end">Price</th>
+                                <th class="text-end">Change</th>
+                                <th class="text-end">Target %</th>
+                                <th class="text-end">Est. Shares</th>
+                                <th class="text-end">Est. Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            portfolioBuildItems.forEach((item, idx) => {
+                // Use fixed shares if specified, otherwise calculate from percentage
+                let shares;
+                let estValue;
+                if (item.fixedShares) {
+                    shares = item.fixedShares;
+                    estValue = shares * (item.currentPrice || 0);
+                } else {
+                    const targetValue = cashToInvest * (item.targetPercent / 100);
+                    shares = item.currentPrice ? Math.floor(targetValue / item.currentPrice) : 0;
+                    estValue = shares * (item.currentPrice || 0);
+                }
+                const changeClass = (item.changePercent || 0) >= 0 ? 'gain-positive' : 'gain-negative';
+                const isCustom = item.isCustom || item.assetClass === 'Custom';
+
+                html += `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div style="width: 12px; height: 12px; border-radius: 3px; background: ${assetClassColors[item.assetClass] || '#64748b'};" class="me-2"></div>
+                            ${assetClassNames[item.assetClass] || item.assetClass || 'Stock'}
+                        </div>
+                    </td>
+                    <td>
+                        ${isCustom ? `<strong>${item.symbol}</strong> <small class="text-muted">${item.name}</small>` : `
+                        <select class="form-select form-select-sm" style="width: 180px;" onchange="changeETF(${idx}, this.value)">
+                            ${suggestedETFs && suggestedETFs[item.assetClass] ? suggestedETFs[item.assetClass].map(etf => `
+                                <option value="${etf.symbol}" ${etf.symbol === item.symbol ? 'selected' : ''}>${etf.symbol} - ${etf.name}</option>
+                            `).join('') : `<option value="${item.symbol}">${item.symbol} - ${item.name}</option>`}
+                        </select>`}
+                    </td>
+                    <td class="text-end">${item.currentPrice ? formatCurrency(item.currentPrice) : '-'}</td>
+                    <td class="text-end ${changeClass}">${item.changePercent ? (item.changePercent >= 0 ? '+' : '') + item.changePercent.toFixed(2) + '%' : '-'}</td>
+                    <td class="text-end">${item.targetPercent.toFixed(1)}%</td>
+                    <td class="text-end fw-bold">${shares}</td>
+                    <td class="text-end">
+                        ${formatCurrency(estValue)}
+                        <button class="btn btn-link btn-sm text-danger p-0 ms-2" onclick="removeFromBuild(${idx})" title="Remove">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </td>
+                </tr>
+                `;
+            });
+
+            const totalEst = portfolioBuildItems.reduce((sum, item) => {
+                let shares;
+                if (item.fixedShares) {
+                    shares = item.fixedShares;
+                } else {
+                    const targetValue = cashToInvest * (item.targetPercent / 100);
+                    shares = item.currentPrice ? Math.floor(targetValue / item.currentPrice) : 0;
+                }
+                return sum + (shares * (item.currentPrice || 0));
+            }, 0);
+
+            // Calculate effective allocation (what % of cash is actually being invested)
+            const effectiveAllocationPercent = analysis.cash > 0 ? (totalEst / analysis.cash) * 100 : 0;
+
+            // Count items with 0 shares due to price being too high
+            const zeroShareItems = portfolioBuildItems.filter(item => {
+                if (item.fixedShares) return false;
+                const targetValue = cashToInvest * (item.targetPercent / 100);
+                const shares = item.currentPrice ? Math.floor(targetValue / item.currentPrice) : 0;
+                return shares === 0 && item.currentPrice > 0;
+            });
+
+            const remainingCash = analysis.cash - totalEst;
+            const isOverBudget = remainingCash < -0.01; // Allow tiny floating point errors
+            const totalAllocationPercent = getTotalAllocationPercent();
+            const hasUnpurchasableItems = zeroShareItems.length > 0;
+
+            // Calculate the cash allocation from the strategy (what's not being invested)
+            const cashAllocationPercent = analysis.cash > 0 ? (remainingCash / analysis.cash) * 100 : 0;
+            const targetCashPercent = builderSelectedModel !== null && rebalanceModels[builderSelectedModel] 
+                ? (rebalanceModels[builderSelectedModel].allocations.find(a => a.assetClass === 'Cash')?.targetPercent || 5)
+                : 5;
+            const isHighRemainingCash = cashAllocationPercent > targetCashPercent + 5; // More than 5% above target
+
+            html += `
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="6" class="text-end fw-bold">Total Investment:</td>
+                                <td class="text-end fw-bold">${formatCurrency(totalEst)}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="6" class="text-end">Remaining Cash:</td>
+                                <td class="text-end ${isHighRemainingCash ? 'text-warning fw-bold' : ''}">${formatCurrency(remainingCash)} <small class="text-muted">(${cashAllocationPercent.toFixed(1)}%)</small></td>
+                            </tr>
+                            <tr>
+                                <td colspan="6" class="text-end">Total Allocation:</td>
+                                <td class="text-end">${(effectiveAllocationPercent + cashAllocationPercent).toFixed(1)}%</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                ${isHighRemainingCash ? `
+                    <div class="alert alert-info mt-3">
+                        <strong>High remaining cash (${cashAllocationPercent.toFixed(1)}%)</strong> - Your strategy targets ${targetCashPercent}% cash, but ${cashAllocationPercent.toFixed(1)}% remains uninvested.
+                        This is because shares must be purchased in whole numbers, and some ETF prices are too high for their allocated amounts.
+                        <br><small class="text-muted">Tip: You can manually add more shares of lower-priced ETFs to reduce cash.</small>
+                    </div>
+                ` : ''}
+                ${hasUnpurchasableItems ? `
+                    <div class="alert alert-warning mt-3">
+                        <strong>${zeroShareItems.length} item(s) show 0 shares</strong> because their price exceeds the allocated amount. 
+                        Consider: increasing allocations, choosing lower-priced ETFs, or adding more cash.
+                        <br><small class="text-muted">Items affected: ${zeroShareItems.map(i => i.symbol).join(', ')}</small>
+                    </div>
+                ` : ''}
+                ${isOverBudget ? `
+                    <div class="alert alert-danger mt-3 mb-0">
+                        Total investment exceeds available cash by ${formatCurrency(Math.abs(remainingCash))}. Please remove items or reduce allocations.
+                    </div>
+                ` : `
+                    <div class="mt-3">
+                        <button class="btn btn-primary" onclick="buildPortfolio()">
+                            Preview Trades
+                        </button>
+                    </div>
+                `}
+            </div>
+            `;
+
+            document.getElementById('etf-selection').innerHTML = html;
+        }
+
+        function changeETF(idx, symbol) {
+            const item = portfolioBuildItems[idx];
+            const etfsForClass = suggestedETFs[item.assetClass];
+            const newETF = etfsForClass?.find(e => e.symbol === symbol);
+
+            if (newETF) {
+                portfolioBuildItems[idx] = {
+                    ...item,
+                    symbol: newETF.symbol,
+                            name: newETF.name,
+                                currentPrice: newETF.currentPrice,
+                                changePercent: newETF.changePercent
+                            };
+                        }
+
+                        renderETFSelection();
+                    }
+
+                    async function buildPortfolio() {
+                        if (portfolioBuildItems.length === 0) return;
+
+                        const analysis = currentAnalysis;
+
+                        document.getElementById('build-preview').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="mt-2">Building portfolio...</p></div>';
+
+                        try {
+                            const resp = await fetch('/api/market/build-portfolio', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    accountIdKey: analysis.accountIdKey, // Pass account ID for trade execution
+                                    cashToInvest: analysis.cash,
+                                    cashReservePercent: 5,
+                                    riskProfile: builderSelectedModel,
+                                    items: portfolioBuildItems
+                                })
+                            });
+
+                            if (resp.ok) {
+                                buildResult = await resp.json();
+                                renderBuildPreview();
+                } else {
+                    document.getElementById('build-preview').innerHTML = '<div class="alert alert-danger">Failed to build portfolio.</div>';
+                }
+            } catch (err) {
+                document.getElementById('build-preview').innerHTML = '<div class="alert alert-danger">Error building portfolio.</div>';
+            }
+        }
+
+        function renderBuildPreview() {
+            if (!buildResult) return;
+
+            let html = `
+            <h6 class="mb-3">Step 3: Review & Execute</h6>
+            <div class="rebalance-card p-3 mb-4">
+                <div class="row mb-3">
+                    <div class="col-md-3 text-center">
+                        <div class="text-muted small">Total Cash</div>
+                        <div class="h5 mb-0">${formatCurrency(buildResult.summary.totalCash)}</div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="text-muted small">Cash Reserve (5%)</div>
+                        <div class="h5 mb-0">${formatCurrency(buildResult.summary.cashReserve)}</div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="text-muted small">To Invest</div>
+                        <div class="h5 mb-0 text-success">${formatCurrency(buildResult.summary.totalInvestment)}</div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="text-muted small">Trades</div>
+                        <div class="h5 mb-0">${buildResult.summary.tradeCount}</div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Description</th>
+                                <th>Action</th>
+                                <th class="text-end">Shares</th>
+                                <th class="text-end">Price</th>
+                                <th class="text-end">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${buildResult.trades.map(t => `
+                                <tr class="trade-buy">
+                                    <td><strong>${t.symbol}</strong></td>
+                                    <td class="small text-muted">${t.description || ''}</td>
+                                    <td><span class="badge bg-success">${t.action}</span></td>
+                                    <td class="text-end">${t.quantity}</td>
+                                    <td class="text-end">${formatCurrency(t.estimatedPrice)}</td>
+                                    <td class="text-end fw-bold">${formatCurrency(t.estimatedValue)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3 d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="previewBuildTrades()">
+                        Preview with E*TRADE
+                    </button>
+                    <button class="btn btn-success" onclick="executeBuildTrades()">
+                        Execute & Build Portfolio
+                    </button>
+                </div>
+            </div>
+            `;
+
+            document.getElementById('build-preview').innerHTML = html;
+        }
+
+        async function previewBuildTrades() {
+            if (!buildResult || buildResult.trades.length === 0) return;
+
+            const marketStatus = getMarketStatus();
+            if (!marketStatus.isOpen) {
+                alert(`⚠️ Market is currently closed (${marketStatus.statusText})\n\nCurrent time: ${marketStatus.currentTime} ET\n${marketStatus.nextEvent}\n\nTrade preview/execution is only available during market hours (9:30 AM - 4:00 PM ET, Mon-Fri).`);
+                return;
+            }
+
+            if (!confirm('Preview trades with E*TRADE?')) return;
+
+            try {
+                const resp = await fetch('/api/rebalance/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        trades: buildResult.trades,
+                        previewOnly: true
+                    })
+                });
+
+                const result = await resp.json();
+                alert(`Preview complete!\n\nSuccess: ${result.successCount}\nFailed: ${result.failedCount}`);
+            } catch (err) {
+                alert('Error previewing trades: ' + err.message);
+            }
+        }
+
+        async function executeBuildTrades() {
+            if (!buildResult || buildResult.trades.length === 0) return;
+
+            const marketStatus = getMarketStatus();
+            if (!marketStatus.isOpen) {
+                alert(`⚠️ Market is currently closed (${marketStatus.statusText})\n\nCurrent time: ${marketStatus.currentTime} ET\n${marketStatus.nextEvent}\n\nTrade execution is only available during market hours (9:30 AM - 4:00 PM ET, Mon-Fri).`);
+                return;
+            }
+
+            if (!confirm('⚠️ EXECUTE ALL TRADES?\n\nThis will place REAL orders with E*TRADE to build your portfolio!\n\nTotal Investment: ' + formatCurrency(buildResult.summary.totalInvestment) + '\n\nAre you sure?')) return;
+
+            try {
+                const resp = await fetch('/api/rebalance/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        trades: buildResult.trades,
+                        previewOnly: false
+                    })
+                });
+
+                const result = await resp.json();
+
+                let message = `Portfolio Build Results:\n\n`;
+                message += `Success: ${result.successCount}\n`;
+                message += `Failed: ${result.failedCount}\n\n`;
+
+                result.results.forEach(r => {
+                    message += `${r.symbol} ${r.action}: ${r.success ? 'OK' : 'FAILED'} ${r.errorMessage || ''}\n`;
+                });
+
+                alert(message);
+
+                // Refresh data
+                loadRebalance();
+                loadPortfolio();
+            } catch (err) {
+                alert('Error executing trades: ' + err.message);
+            }
+        }
+
+        // ========== SAVE/LOAD PORTFOLIO FUNCTIONS ==========
+        function showSavePortfolioModal() {
+            if (!portfolioBuildItems || portfolioBuildItems.length === 0) {
+                alert('Add some stocks/ETFs to your portfolio first before saving.');
+                return;
+            }
+
+            const name = prompt('Enter a name for this portfolio:', `My Portfolio ${new Date().toLocaleDateString()}`);
+            if (name && name.trim()) {
+                if (savePortfolio(name.trim())) {
+                    alert(`Portfolio "${name.trim()}" saved successfully!`);
+                    // Re-render to update the Load dropdown
+                    renderPortfolioBuilder(currentAnalysis);
+                }
+            }
+        }
+
+        async function loadAndRenderPortfolio(portfolioId) {
+            if (loadSavedPortfolio(portfolioId)) {
+                // Need to refresh prices for loaded items
+                const symbols = portfolioBuildItems.map(i => i.symbol).join(',');
+                try {
+                    const resp = await fetch(`/api/market/quote/${symbols}`);
+                    if (resp.ok) {
+                        const quotes = await resp.json();
+                        portfolioBuildItems.forEach(item => {
+                            const quote = quotes.find(q => q.symbol.toUpperCase() === item.symbol.toUpperCase());
+                            if (quote) {
+                                item.currentPrice = quote.lastPrice;
+                                item.changePercent = quote.changePercent;
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.error('Failed to refresh quotes for loaded portfolio:', err);
+                }
+
+                renderPortfolioBuilder(currentAnalysis);
+                renderETFSelection();
+            }
+        }
+
+        function deleteAndRefresh(portfolioId) {
+            if (confirm('Delete this saved portfolio?')) {
+                deleteSavedPortfolio(portfolioId);
+                renderPortfolioBuilder(currentAnalysis);
+            }
+        }
+
+        // Update market status in header
+        function updateMarketStatusHeader() {
+            const el = document.getElementById('market-status-header');
+            if (el) {
+                el.innerHTML = renderMarketStatusBadge();
+            }
+        }
+
+        // Update market status every minute
+        setInterval(updateMarketStatusHeader, 60000);
+
+        // Initial load
+        updateMarketStatusHeader();
+        loadPortfolio();
+    </script>
+</body>
+</html>

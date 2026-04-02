@@ -1,0 +1,266 @@
+[
+  {
+    "ContainingType": "FullPort.Controllers.AnalyticsController",
+    "Method": "GetBenchmarkComparison",
+    "RelativePath": "api/Analytics/benchmark-comparison",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.AnalyticsController",
+    "Method": "GetCorrelationMatrix",
+    "RelativePath": "api/Analytics/correlation",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.AnalyticsController",
+    "Method": "GetPortfolioHealth",
+    "RelativePath": "api/Analytics/portfolio-health",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.MarketController",
+    "Method": "BuildPortfolio",
+    "RelativePath": "api/Market/build-portfolio",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "FullPort.Models.BuildPortfolioRequest",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.MarketController",
+    "Method": "GetMarketIndices",
+    "RelativePath": "api/Market/indices",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.MarketController",
+    "Method": "GetQuotes",
+    "RelativePath": "api/Market/quote/{symbols}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "symbols",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.MarketController",
+    "Method": "GetSuggestedETFs",
+    "RelativePath": "api/Market/suggested-etfs",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.PortfolioController",
+    "Method": "GetPortfolio",
+    "RelativePath": "api/Portfolio",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.PortfolioController",
+    "Method": "GetPositions",
+    "RelativePath": "api/Portfolio/{accountIdKey}/positions",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "accountIdKey",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.PortfolioController",
+    "Method": "ExchangePin",
+    "RelativePath": "api/Portfolio/access-token",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "FullPort.Controllers.PortfolioController\u002BOobPinRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.PortfolioController",
+    "Method": "GetAllPositions",
+    "RelativePath": "api/Portfolio/all-positions",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.PortfolioController",
+    "Method": "Authenticate",
+    "RelativePath": "api/Portfolio/authenticate",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.PortfolioController",
+    "Method": "DebugBalance",
+    "RelativePath": "api/Portfolio/debug-balance/{accountIdKey}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "accountIdKey",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.PortfolioController",
+    "Method": "GetDetailedHoldings",
+    "RelativePath": "api/Portfolio/holdings-detailed",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.PortfolioController",
+    "Method": "SignOut",
+    "RelativePath": "api/Portfolio/sign-out",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.RebalanceController",
+    "Method": "AnalyzePortfolio",
+    "RelativePath": "api/Rebalance/analyze",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "accountIdKey",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "testCash",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.RebalanceController",
+    "Method": "CalculateRebalance",
+    "RelativePath": "api/Rebalance/calculate",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "FullPort.Models.RebalanceRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.RebalanceController",
+    "Method": "ExecuteTrades",
+    "RelativePath": "api/Rebalance/execute",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "FullPort.Models.ExecuteRebalanceRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.RebalanceController",
+    "Method": "GetModels",
+    "RelativePath": "api/Rebalance/models",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FullPort.Controllers.WeatherForecastController",
+    "Method": "Get",
+    "RelativePath": "WeatherForecast",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[FullPort.WeatherForecast, FullPort, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "GetWeatherForecast"
+  }
+]
