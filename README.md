@@ -5,9 +5,8 @@
 ![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet)
 ![C#](https://img.shields.io/badge/C%23-14.0-239120?style=for-the-badge&logo=csharp)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=for-the-badge&logo=bootstrap)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-**A comprehensive, commercial-grade portfolio management application for E*TRADE accounts**
+**A comprehensive, portfolio management application for E*TRADE accounts**
 
 [Features](#-features) • [Getting Started](#-getting-started) • [Configuration](#-configuration) • [Usage](#-usage) • [API Reference](#-api-reference)
 
@@ -398,61 +397,3 @@ FullPort/
    }
    ```
 
-### Manual Testing Checklist
-
-- [ ] OAuth authentication flow
-- [ ] Portfolio loading and display
-- [ ] Each rebalancing strategy calculation
-- [ ] Custom allocation validation
-- [ ] Trade preview functionality
-- [ ] Trade execution (sandbox)
-- [ ] Error handling scenarios
-- [ ] Multi-account support
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Code Style
-
-- Follow C# coding conventions
-- Use meaningful variable names
-- Add XML documentation for public APIs
-- Include unit tests for new features
-
----
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- [E*TRADE Developer API](https://developer.etrade.com/) for the trading platform integration
-- [Bootstrap](https://getbootstrap.com/) for the responsive UI framework
-- [Chart.js](https://www.chartjs.org/) for portfolio visualization
-
----
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/fullport/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/fullport/discussions)
-
----
-
-<div align="center">
-
-**Built with ❤️ for smart portfolio management**
-
-</div>
