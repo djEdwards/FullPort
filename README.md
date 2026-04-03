@@ -8,7 +8,7 @@
 
 **A comprehensive, portfolio management application for E*TRADE accounts**
 
-[Features](#-features) • [Getting Started](#-getting-started) • [Configuration](#-configuration) • [Usage](#-usage) • [API Reference](#-api-reference)
+[Features](#-features) • [Getting Started](#-getting-started) • [Configuration](#-configuration) • [Usage](#-usage) • [API Reference](#-api-reference) • [Developer Guide](GUIDE.md)
 
 </div>
 
